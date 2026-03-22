@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>MediCare HMS</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+  <style>
+    :root{--sidebar:#0a2540;--accent:#4ea8de;}
+    body{background:#f4f7fb;font-family:'Segoe UI',sans-serif;}
+    .auth-wrap{min-height:100vh;background:linear-gradient(135deg,#0a2540 0%,#1a6fba 100%);display:flex;align-items:center;justify-content:center;}
+    .auth-box{background:#fff;border-radius:20px;padding:40px;width:100%;max-width:430px;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+    .auth-box .logo{font-size:1.4rem;font-weight:700;color:#0a2540;}.auth-box .logo span{color:#0d6efd;}
+    .role-tabs .nav-link{border-radius:50px;color:#666;font-weight:500;}
+    .role-tabs .nav-link.active{background:#0d6efd;color:#fff;}
+    #sidebar{width:256px;min-height:100vh;background:var(--sidebar);color:#cdd9e5;position:fixed;top:0;left:0;z-index:100;display:flex;flex-direction:column;}
+    #sidebar .brand{padding:20px 22px;font-size:1.25rem;font-weight:700;color:#fff;border-bottom:1px solid #1e3a5f;}
+    #sidebar .brand span{color:var(--accent);}
+    #sidebar .nav-link{color:#cdd9e5;padding:11px 22px;border-radius:8px;margin:2px 10px;font-size:.9rem;}
+    #sidebar .nav-link:hover,#sidebar .nav-link.active{background:#1a3f6f;color:#fff;}
+    #sidebar .sec-lbl{font-size:.7rem;text-transform:uppercase;letter-spacing:1px;padding:18px 22px 4px;color:#6b8cba;}
+    #main{margin-left:256px;min-height:100vh;}
+    .topbar{background:#fff;padding:13px 26px;border-bottom:1px solid #e5eaf0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:99;}
+    .content{padding:26px;}
+    .stat-card{border:none;border-radius:14px;padding:22px;color:#fff;box-shadow:0 4px 18px rgba(0,0,0,.1);}
+    .stat-card .val{font-size:2rem;font-weight:700;}.stat-card .lbl{font-size:.8rem;opacity:.85;}
+    .bg-c1{background:linear-gradient(135deg,#0d6efd,#4ea8de);}
+    .bg-c2{background:linear-gradient(135deg,#198754,#20c997);}
+    .bg-c3{background:linear-gradient(135deg,#fd7e14,#ffc107);}
+    .bg-c4{background:linear-gradient(135deg,#dc3545,#e07b9a);}
+    .hms-table th{font-size:.78rem;text-transform:uppercase;letter-spacing:.5px;background:#f8faff;}
+    .rx-card{border-radius:12px;border:2px dashed #cde;background:#f7fbff;}
+    .toast-wrap{position:fixed;top:20px;right:20px;z-index:9999;}
+    @media(max-width:768px){#sidebar{display:none;}#main{margin-left:0;}}
+  </style>
+</head>
+<body>
+
+<!-- ROLE SELECT -->
+<div id="role-screen" class="auth-wrap">
+  <div class="text-center">
+    <div class="text-white mb-5">
+      <i class="bi bi-hospital" style="font-size:3.5rem;color:#4ea8de;"></i>
+      <h1 class="fw-bold mt-2">MediCare HMS</h1>
+      <p class="opacity-75 mb-0">Select your role to continue</p>
+    </div>
+    <div class="d-flex flex-wrap gap-4 justify-content-center">
+      <div class="bg-white rounded-4 p-4 text-center" style="cursor:pointer;width:160px;box-shadow:0 8px 28px rgba(0,0,0,.2);" onclick="showAuth('admin')">
+        <i class="bi bi-shield-lock-fill text-primary mb-2" style="font-size:2.3rem;"></i>
+        <h6 class="fw-bold mb-0">Admin</h6><small class="text-muted">Full Access</small>
+      </div>
+      <div class="bg-white rounded-4 p-4 text-center" style="cursor:pointer;width:160px;box-shadow:0 8px 28px rgba(0,0,0,.2);" onclick="showAuth('doctor')">
+        <i class="bi bi-heart-pulse-fill text-success mb-2" style="font-size:2.3rem;"></i>
+        <h6 class="fw-bold mb-0">Doctor</h6><small class="text-muted">Appointments & Rx</small>
+      </div>
+      <div class="bg-white rounded-4 p-4 text-center" style="cursor:pointer;width:160px;box-shadow:0 8px 28px rgba(0,0,0,.2);" onclick="showAuth('patient')">
+        <i class="bi bi-person-heart text-warning mb-2" style="font-size:2.3rem;"></i>
+        <h6 class="fw-bold mb-0">Patient</h6><small class="text-muted">Book & View</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen" class="auth-wrap" style="display:none;">
+  <div class="auth-box">
+    <div class="logo text-center mb-3">Medi<span>Care</span> HMS</div>
+    <div id="auth-role-badge" class="text-center mb-3"></div>
+    <ul class="nav role-tabs nav-pills justify-content-center mb-4" id="auth-tabs" style="display:none!important;"></ul>
+    <div id="form-login">
+      <h5 class="fw-bold mb-3 text-center" id="login-title">Login</h5>
+      <form onsubmit="doLogin(event)">
+        <div class="mb-3"><label class="form-label fw-semibold">Email</label>
+          <input type="email" id="login-email" class="form-control" placeholder="you@example.com" required/></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Password</label>
+          <div class="input-group">
+            <input type="password" id="login-pass" class="form-control" placeholder="••••••••" required/>
+            <button class="btn btn-outline-secondary" type="button" onclick="togglePwd('login-pass')"><i class="bi bi-eye"></i></button>
+          </div>
+        </div>
+        <div id="login-err" class="alert alert-danger py-2 d-none"></div>
+        <button type="submit" class="btn btn-primary w-100 fw-semibold" id="login-btn">
+          <span class="spinner-border spinner-border-sm me-1 d-none" id="login-spin"></span>Login
+        </button>
+      </form>
+    </div>
+    <div id="form-register" style="display:none;">
+      <h5 class="fw-bold mb-3 text-center">Create Account</h5>
+      <form onsubmit="doRegister(event)">
+        <div class="row g-2 mb-2">
+          <div class="col"><label class="form-label fw-semibold">Full Name</label><input type="text" id="reg-name" class="form-control" required/></div>
+          <div class="col"><label class="form-label fw-semibold">Age</label><input type="number" id="reg-age" class="form-control" min="1" max="120"/></div>
+        </div>
+        <div class="mb-2"><label class="form-label fw-semibold">Email</label><input type="email" id="reg-email" class="form-control" required/></div>
+        <div class="row g-2 mb-2">
+          <div class="col"><label class="form-label fw-semibold">Phone</label><input type="tel" id="reg-phone" class="form-control"/></div>
+          <div class="col"><label class="form-label fw-semibold">Blood Group</label>
+            <select id="reg-blood" class="form-select"><option value="">--</option>
+              <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+              <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+            </select>
+          </div>
+        </div>
+        <div class="mb-3"><label class="form-label fw-semibold">Password</label>
+          <div class="input-group">
+            <input type="password" id="reg-pass" class="form-control" minlength="6" required/>
+            <button class="btn btn-outline-secondary" type="button" onclick="togglePwd('reg-pass')"><i class="bi bi-eye"></i></button>
+          </div>
+        </div>
+        <div id="reg-err" class="alert alert-danger py-2 d-none"></div>
+        <button type="submit" class="btn btn-success w-100 fw-semibold">
+          <span class="spinner-border spinner-border-sm me-1 d-none" id="reg-spin"></span>Register
+        </button>
+      </form>
+    </div>
+    <div class="text-center mt-3">
+      <button class="btn btn-link btn-sm text-muted" onclick="showRoleSelect()"><i class="bi bi-arrow-left me-1"></i>Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-wrap">
+  <div id="toast" class="toast align-items-center border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body fw-semibold" id="toast-msg"></div>
+      <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="app-shell" style="display:none;">
+  <div id="sidebar">
+    <div class="brand">Medi<span>Care</span> HMS</div>
+    <nav class="nav flex-column mt-1 flex-grow-1" id="sidebar-nav"></nav>
+    <div class="p-3 border-top" style="border-color:#1e3a5f!important;">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <img id="sb-avatar" src="" class="rounded-circle" width="34" height="34"/>
+        <div><div id="sb-name" class="text-white fw-semibold" style="font-size:.85rem;"></div>
+             <div id="sb-role" class="text-muted" style="font-size:.72rem;text-transform:capitalize;"></div></div>
+      </div>
+      <button class="btn btn-outline-danger btn-sm w-100" onclick="logout()"><i class="bi bi-box-arrow-left me-1"></i>Logout</button>
+    </div>
+  </div>
+  <div id="main">
+    <div class="topbar">
+      <span class="fw-semibold text-dark" id="page-title">Dashboard</span>
+      <div class="d-flex align-items-center gap-3">
+        <i class="bi bi-bell text-muted fs-5"></i>
+        <span class="fw-semibold small" id="topbar-user"></span>
+      </div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const API='/api';
+let session=JSON.parse(localStorage.getItem('hms_session')||'null');
+let currentRole=session?.user?.role||'';
+function saveSession(d){session=d;localStorage.setItem('hms_session',JSON.stringify(d));}
+function clearSession(){session=null;currentRole='';localStorage.removeItem('hms_session');}
+function authHeaders(){return{'Content-Type':'application/json','Authorization':`Bearer ${session?.token}`};}
+function toast(msg,type='success'){
+  const el=document.getElementById('toast');
+  el.className=`toast align-items-center border-0 text-white bg-${type==='success'?'success':type==='error'?'danger':'primary'}`;
+  document.getElementById('toast-msg').textContent=msg;
+  new bootstrap.Toast(el,{delay:3000}).show();
+}
+let authRole='';
+function togglePwd(id){const el=document.getElementById(id);el.type=el.type==='password'?'text':'password';}
+function showRoleSelect(){hide('auth-screen');show('role-screen');hide('app-shell');}
+function showAuth(role){
+  authRole=role;hide('role-screen');show('auth-screen');
+  const icons={admin:'shield-lock-fill text-primary',doctor:'heart-pulse-fill text-success',patient:'person-heart text-warning'};
+  document.getElementById('auth-role-badge').innerHTML=`<span class="badge bg-light text-dark border fs-6 px-3 py-2"><i class="bi bi-${icons[role]} me-2"></i>${role.charAt(0).toUpperCase()+role.slice(1)}</span>`;
+  const tabs=document.getElementById('auth-tabs');
+  if(role==='patient'){
+    tabs.style.removeProperty('display');
+    tabs.innerHTML=`<li class="nav-item"><a class="nav-link active" href="#" onclick="switchAuthTab('login',this)">Login</a></li><li class="nav-item"><a class="nav-link" href="#" onclick="switchAuthTab('register',this)">Register</a></li>`;
+  } else {tabs.style.display='none!important';}
+  show('form-login');hide('form-register');
+  document.getElementById('login-title').textContent=`${role.charAt(0).toUpperCase()+role.slice(1)} Login`;
+  document.getElementById('login-err').classList.add('d-none');
+}
+function switchAuthTab(tab,el){
+  el.closest('ul').querySelectorAll('.nav-link').forEach(a=>a.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('form-login').style.display=tab==='login'?'':'none';
+  document.getElementById('form-register').style.display=tab==='register'?'':'none';
+}
+async function doLogin(e){
+  e.preventDefault();
+  const email=document.getElementById('login-email').value.trim();
+  const password=document.getElementById('login-pass').value;
+  const btn=document.getElementById('login-btn');
+  const spin=document.getElementById('login-spin');
+  const err=document.getElementById('login-err');
+  btn.disabled=true;spin.classList.remove('d-none');err.classList.add('d-none');
+  try{
+    const r=await fetch(`${API}/${authRole}/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.error||'Login failed');
+    saveSession(data);currentRole=data.user.role;launchApp();toast(`Welcome back, ${data.user.name}!`);
+  }catch(ex){err.textContent=ex.message;err.classList.remove('d-none');}
+  finally{btn.disabled=false;spin.classList.add('d-none');}
+}
+async function doRegister(e){
+  e.preventDefault();
+  const body={name:document.getElementById('reg-name').value.trim(),email:document.getElementById('reg-email').value.trim(),password:document.getElementById('reg-pass').value,age:document.getElementById('reg-age').value,phone:document.getElementById('reg-phone').value,blood:document.getElementById('reg-blood').value};
+  const spin=document.getElementById('reg-spin');const err=document.getElementById('reg-err');
+  spin.classList.remove('d-none');err.classList.add('d-none');
+  try{
+    const r=await fetch(`${API}/patient/register`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.error||'Registration failed');
+    saveSession(data);currentRole='patient';launchApp();toast('Account created! Welcome to MediCare.');
+  }catch(ex){err.textContent=ex.message;err.classList.remove('d-none');}
+  finally{spin.classList.add('d-none');}
+}
+const menus={
+  admin:[{icon:'speedometer2',label:'Dashboard',key:'admin-dash'},{icon:'people-fill',label:'Doctors',key:'admin-doctors'},{icon:'person-lines-fill',label:'Patients',key:'admin-patients'},{icon:'calendar-check-fill',label:'Appointments',key:'admin-appts'},{icon:'receipt',label:'Billing',key:'admin-billing'}],
+  doctor:[{icon:'speedometer2',label:'Dashboard',key:'doc-dash'},{icon:'calendar-check-fill',label:'Appointments',key:'doc-appts'},{icon:'file-medical-fill',label:'Prescriptions',key:'doc-rx'}],
+  patient:[{icon:'speedometer2',label:'Dashboard',key:'pat-dash'},{icon:'calendar-plus-fill',label:'Book Appointment',key:'pat-book'},{icon:'file-earmark-medical',label:'My Reports',key:'pat-reports'},{icon:'file-medical-fill',label:'My Prescriptions',key:'pat-rx'}],
+};
+function launchApp(){
+  hide('role-screen');hide('auth-screen');show('app-shell');
+  const u=session.user;
+  document.getElementById('sb-name').textContent=u.name;
+  document.getElementById('sb-role').textContent=u.role;
+  document.getElementById('topbar-user').textContent=u.name;
+  document.getElementById('sb-avatar').src=`https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=0d6efd&color=fff&size=36`;
+  buildSidebar();renderPage(menus[currentRole][0].key);
+}
+function buildSidebar(){
+  const nav=document.getElementById('sidebar-nav');
+  nav.innerHTML=`<div class="sec-lbl">${currentRole} Panel</div>`;
+  menus[currentRole].forEach(m=>{
+    const a=document.createElement('a');a.href='#';a.className='nav-link';
+    a.innerHTML=`<i class="bi bi-${m.icon} me-2"></i>${m.label}`;
+    a.onclick=(e)=>{e.preventDefault();renderPage(m.key);};
+    nav.appendChild(a);
+  });
+}
+function setActiveNav(key){document.querySelectorAll('#sidebar-nav .nav-link').forEach((a,i)=>{a.classList.toggle('active',menus[currentRole][i]?.key===key);});}
+function logout(){clearSession();hide('app-shell');showRoleSelect();}
+const titles={'admin-dash':'Dashboard','admin-doctors':'Manage Doctors','admin-patients':'Patients','admin-appts':'Appointments','admin-billing':'Billing','doc-dash':'Dashboard','doc-appts':'My Appointments','doc-rx':'Prescriptions','pat-dash':'Dashboard','pat-book':'Book Appointment','pat-reports':'My Reports','pat-rx':'My Prescriptions'};
+async function renderPage(key){
+  setActiveNav(key);
+  document.getElementById('page-title').textContent=titles[key]||key;
+  const c=document.getElementById('content');
+  c.innerHTML=`<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>`;
+  try{
+    switch(key){
+      case 'admin-dash':c.innerHTML=await adminDash();break;
+      case 'admin-doctors':c.innerHTML=await adminDoctors();break;
+      case 'admin-patients':c.innerHTML=await adminPatients();break;
+      case 'admin-appts':c.innerHTML=await adminAppts();break;
+      case 'admin-billing':c.innerHTML=await adminBilling();break;
+      case 'doc-dash':c.innerHTML=await docDash();break;
+      case 'doc-appts':c.innerHTML=await docAppts();break;
+      case 'doc-rx':c.innerHTML=await docRx();break;
+      case 'pat-dash':c.innerHTML=await patDash();break;
+      case 'pat-book':c.innerHTML=await patBook();break;
+      case 'pat-reports':c.innerHTML=patReports();break;
+      case 'pat-rx':c.innerHTML=await patRx();break;
+    }
+  }catch(ex){c.innerHTML=`<div class="alert alert-danger">${ex.message}</div>`;}
+}
+async function apiFetch(path,opts={}){
+  const r=await fetch(API+path,{...opts,headers:authHeaders()});
+  if(r.status===401){logout();throw new Error('Session expired');}
+  const d=await r.json();
+  if(!r.ok)throw new Error(d.error||'API error');
+  return d;
+}
+async function adminDash(){
+  const s=await apiFetch('/stats');
+  return `<div class="row g-4 mb-4">
+    <div class="col-sm-6 col-xl-3"><div class="stat-card bg-c1"><div class="d-flex justify-content-between"><div><div class="lbl">Doctors</div><div class="val">${s.doctors}</div></div><i class="bi bi-people-fill" style="font-size:2.2rem;opacity:.8;"></i></div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="stat-card bg-c2"><div class="d-flex justify-content-between"><div><div class="lbl">Patients</div><div class="val">${s.patients}</div></div><i class="bi bi-person-heart" style="font-size:2.2rem;opacity:.8;"></i></div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="stat-card bg-c3"><div class="d-flex justify-content-between"><div><div class="lbl">Appointments</div><div class="val">${s.appointments}</div></div><i class="bi bi-calendar-check" style="font-size:2.2rem;opacity:.8;"></i></div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="stat-card bg-c4"><div class="d-flex justify-content-between"><div><div class="lbl">Revenue</div><div class="val">₹${Number(s.revenue).toLocaleString()}</div></div><i class="bi bi-cash-coin" style="font-size:2.2rem;opacity:.8;"></i></div></div></div>
+  </div>
+  <div class="row g-4">
+    <div class="col-md-8"><div class="card border-0 shadow-sm rounded-4"><div class="card-header bg-white fw-semibold border-0 pt-3">Recent Appointments</div><div class="card-body p-0" id="dash-ap"><div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div></div></div></div></div>
+    <div class="col-md-4"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-header bg-white fw-semibold border-0 pt-3">Quick Actions</div><div class="card-body d-flex flex-column gap-2">
+      <button class="btn btn-primary" onclick="renderPage('admin-doctors')"><i class="bi bi-plus-circle me-2"></i>Add Doctor</button>
+      <button class="btn btn-success" onclick="renderPage('admin-patients')"><i class="bi bi-people me-2"></i>View Patients</button>
+      <button class="btn btn-warning text-dark" onclick="renderPage('admin-appts')"><i class="bi bi-calendar-check me-2"></i>Appointments</button>
+      <button class="btn btn-danger" onclick="renderPage('admin-billing')"><i class="bi bi-receipt me-2"></i>Billing</button>
+    </div></div></div>
+  </div>`;
+}
+async function adminDoctors(){
+  const docs=await apiFetch('/doctors');
+  const rows=docs.map(d=>`<tr>
+    <td><img src="https://ui-avatars.com/api/?name=${encodeURIComponent(d.name)}&background=0d6efd&color=fff&size=30" class="rounded-circle me-2" width="30"/>${d.name}</td>
+    <td>${d.speciality||'-'}</td><td>${d.phone||'-'}</td><td>${d.email}</td>
+    <td><span class="badge bg-${d.status==='Active'?'success':'secondary'}">${d.status}</span></td>
+    <td>
+      <button class="btn btn-sm btn-outline-primary me-1" onclick="editDoctorModal(${d.id},'${d.name}','${d.speciality}','${d.phone}','${d.email}','${d.status}')"><i class="bi bi-pencil"></i></button>
+      <button class="btn btn-sm btn-outline-danger" onclick="deleteDoctor(${d.id})"><i class="bi bi-trash"></i></button>
+    </td></tr>`).join('');
+  return `<div class="d-flex justify-content-between align-items-center mb-3">
+    <input class="form-control w-25" placeholder="Search..." oninput="filterTable(this,'doc-tbl')"/>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDocModal"><i class="bi bi-plus-lg me-1"></i>Add Doctor</button>
+  </div>
+  <div class="card border-0 shadow-sm rounded-4"><div class="card-body p-0">
+    <table class="table hms-table mb-0 align-middle" id="doc-tbl">
+      <thead><tr><th>Name</th><th>Speciality</th><th>Phone</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div></div>
+  <div class="modal fade" id="addDocModal" tabindex="-1"><div class="modal-dialog"><form class="modal-content rounded-4" onsubmit="addDoctor(event)">
+    <div class="modal-header"><h5 class="modal-title">Add Doctor</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+      <div class="mb-2"><label class="form-label fw-semibold">Full Name</label><input id="d-name" class="form-control" required/></div>
+      <div class="mb-2"><label class="form-label fw-semibold">Speciality</label><input id="d-spec" class="form-control"/></div>
+      <div class="row g-2 mb-2"><div class="col"><label class="form-label fw-semibold">Phone</label><input id="d-phone" class="form-control"/></div>
+      <div class="col"><label class="form-label fw-semibold">Email</label><input id="d-email" class="form-control" type="email" required/></div></div>
+      <div class="mb-2"><label class="form-label fw-semibold">Password</label><input id="d-pass" class="form-control" type="password" value="Doctor@123" required/></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button><button class="btn btn-primary" type="submit">Save</button></div>
+  </form></div></div>
+  <div class="modal fade" id="editDocModal" tabindex="-1"><div class="modal-dialog"><form class="modal-content rounded-4" onsubmit="updateDoctor(event)">
+    <div class="modal-header"><h5 class="modal-title">Edit Doctor</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+      <input type="hidden" id="ed-id"/>
+      <div class="mb-2"><label class="form-label fw-semibold">Full Name</label><input id="ed-name" class="form-control" required/></div>
+      <div class="mb-2"><label class="form-label fw-semibold">Speciality</label><input id="ed-spec" class="form-control"/></div>
+      <div class="row g-2 mb-2"><div class="col"><label class="form-label fw-semibold">Phone</label><input id="ed-phone" class="form-control"/></div>
+      <div class="col"><label class="form-label fw-semibold">Email</label><input id="ed-email" class="form-control" type="email" required/></div></div>
+      <div class="mb-2"><label class="form-label fw-semibold">Status</label><select id="ed-status" class="form-select"><option>Active</option><option>Inactive</option></select></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button><button class="btn btn-primary" type="submit">Update</button></div>
+  </form></div></div>`;
+}
+async function addDoctor(e){
+  e.preventDefault();
+  await apiFetch('/doctors',{method:'POST',body:JSON.stringify({name:document.getElementById('d-name').value,speciality:document.getElementById('d-spec').value,phone:document.getElementById('d-phone').value,email:document.getElementById('d-email').value,password:document.getElementById('d-pass').value})});
+  bootstrap.Modal.getInstance(document.getElementById('addDocModal')).hide();
+  toast('Doctor added!');renderPage('admin-doctors');
+}
+function editDoctorModal(id,name,spec,phone,email,status){
+  document.getElementById('ed-id').value=id;document.getElementById('ed-name').value=name;
+  document.getElementById('ed-spec').value=spec;document.getElementById('ed-phone').value=phone;
+  document.getElementById('ed-email').value=email;document.getElementById('ed-status').value=status;
+  new bootstrap.Modal(document.getElementById('editDocModal')).show();
+}
+async function updateDoctor(e){
+  e.preventDefault();const id=document.getElementById('ed-id').value;
+  await apiFetch(`/doctors/${id}`,{method:'PUT',body:JSON.stringify({name:document.getElementById('ed-name').value,speciality:document.getElementById('ed-spec').value,phone:document.getElementById('ed-phone').value,email:document.getElementById('ed-email').value,status:document.getElementById('ed-status').value})});
+  bootstrap.Modal.getInstance(document.getElementById('editDocModal')).hide();
+  toast('Doctor updated!');renderPage('admin-doctors');
+}
+async function deleteDoctor(id){
+  if(!confirm('Delete this doctor?'))return;
+  await apiFetch(`/doctors/${id}`,{method:'DELETE'});
+  toast('Deleted','error');renderPage('admin-doctors');
+}
+async function adminPatients(){
+  const pts=await apiFetch('/patients');
+  const rows=pts.map(p=>`<tr>
+    <td><img src="https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=198754&color=fff&size=30" class="rounded-circle me-2" width="30"/>${p.name}</td>
+    <td>${p.age||'-'}</td><td><span class="badge bg-light text-dark border">${p.blood_group||'-'}</span></td>
+    <td>${p.phone||'-'}</td><td>${p.email}</td>
+    <td><span class="badge bg-${p.status==='Active'?'success':'secondary'}">${p.status}</span></td></tr>`).join('');
+  return `<div class="mb-3"><input class="form-control w-25" placeholder="Search..." oninput="filterTable(this,'pat-tbl')"/></div>
+  <div class="card border-0 shadow-sm rounded-4"><div class="card-body p-0">
+    <table class="table hms-table mb-0 align-middle" id="pat-tbl">
+      <thead><tr><th>Name</th><th>Age</th><th>Blood</th><th>Phone</th><th>Email</th><th>Status</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div></div>`;
+}
+async function adminAppts(){
+  const appts=await apiFetch('/appointments');
+  return `<div class="d-flex justify-content-between align-items-center mb-3">
+    <input class="form-control w-25" placeholder="Search..." oninput="filterTable(this,'appt-tbl')"/>
+    <select class="form-select" style="width:160px;" onchange="filterStatus(this,'appt-tbl')"><option value="">All Status</option><option>Pending</option><option>Confirmed</option><option>Completed</option><option>Cancelled</option></select>
+  </div>
+  <div class="card border-0 shadow-sm rounded-4"><div class="card-body p-0">
+    <table class="table hms-table mb-0 align-middle" id="appt-tbl">
+      <thead><tr><th>Patient</th><th>Doctor</th><th>Date</th><th>Time</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>${appts.map(a=>`<tr>
+        <td>${a.patient_name}</td><td>${a.doctor_name}</td><td>${a.date}</td><td>${a.time}</td><td>${a.reason||'-'}</td>
+        <td><span class="badge ${statusBadge(a.status)}">${a.status}</span></td>
+        <td><select class="form-select form-select-sm" style="width:130px;" onchange="updateApptStatus(${a.id},this.value)">
+          <option ${a.status==='Pending'?'selected':''}>Pending</option>
+          <option ${a.status==='Confirmed'?'selected':''}>Confirmed</option>
+          <option ${a.status==='Completed'?'selected':''}>Completed</option>
+          <option ${a.status==='Cancelled'?'selected':''}>Cancelled</option>
+        </select></td></tr>`).join('')}
+      </tbody>
+    </table>
+  </div></div>`;
+}
+async function updateApptStatus(id,status){await apiFetch(`/appointments/${id}/status`,{method:'PUT',body:JSON.stringify({status})});toast(`Status → ${status}`);}
+async function adminBilling(){
+  const bills=await apiFetch('/billing');
+  const total=bills.reduce((a,b)=>a+Number(b.amount),0);
+  const paid=bills.filter(b=>b.status==='Paid').reduce((a,b)=>a+Number(b.amount),0);
+  return `<div class="row g-3 mb-4">
+    <div class="col-md-4"><div class="stat-card bg-c1 p-3"><div class="lbl">Total Billed</div><div class="val">₹${total.toLocaleString()}</div></div></div>
+    <div class="col-md-4"><div class="stat-card bg-c2 p-3"><div class="lbl">Collected</div><div class="val">₹${paid.toLocaleString()}</div></div></div>
+    <div class="col-md-4"><div class="stat-card bg-c3 p-3"><div class="lbl">Pending</div><div class="val">₹${(total-paid).toLocaleString()}</div></div></div>
+  </div>
+  <div class="card border-0 shadow-sm rounded-4"><div class="card-body p-0">
+    <table class="table hms-table mb-0 align-middle">
+      <thead><tr><th>Bill ID</th><th>Patient</th><th>Date</th><th>Type</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>${bills.map(b=>`<tr>
+        <td>#B${String(b.id).padStart(4,'0')}</td><td>${b.patient_name}</td><td>${b.date}</td><td>${b.type}</td>
+        <td>₹${Number(b.amount).toLocaleString()}</td>
+        <td><span class="badge ${b.status==='Paid'?'bg-success':'bg-warning text-dark'}">${b.status}</span></td>
+        <td>${b.status==='Pending'?`<button class="btn btn-sm btn-outline-success" onclick="markPaid(${b.id})">Mark Paid</button>`:'<span class="text-muted small">Done</span>'}</td></tr>`).join('')}
+      </tbody>
+    </table>
+  </div></div>`;
+}
+async function markPaid(id){await apiFetch(`/billing/${id}/pay`,{method:'PUT'});toast('Marked as Paid!');renderPage('admin-billing');}
+async function docDash(){
+  const appts=await apiFetch('/appointments/doctor');
+  const today=new Date().toISOString().split('T')[0];
+  const todayA=appts.filter(a=>a.date===today);
+  return `<div class="row g-4 mb-4">
+    <div class="col-sm-4"><div class="stat-card bg-c1"><div class="d-flex justify-content-between"><div><div class="lbl">Today</div><div class="val">${todayA.length}</div></div><i class="bi bi-calendar-day" style="font-size:2rem;opacity:.8;"></i></div></div></div>
+    <div class="col-sm-4"><div class="stat-card bg-c2"><div class="d-flex justify-content-between"><div><div class="lbl">Total</div><div class="val">${appts.length}</div></div><i class="bi bi-calendar-check" style="font-size:2rem;opacity:.8;"></i></div></div></div>
+    <div class="col-sm-4"><div class="stat-card bg-c3"><div class="d-flex justify-content-between"><div><div class="lbl">Pending</div><div class="val">${appts.filter(a=>a.status==='Pending').length}</div></div><i class="bi bi-clock-history" style="font-size:2rem;opacity:.8;"></i></div></div></div>
+  </div>
+  <div class="card border-0 shadow-sm rounded-4"><div class="card-header bg-white fw-semibold border-0 pt-3">Today's Patients</div>
+  <div class="card-body p-0">${apptTableDoc(todayA)}</div></div>`;
+}
+async function docAppts(){
+  const appts=await apiFetch('/appointments/doctor');
+  return `<div class="mb-3 d-flex gap-2"><input class="form-control w-25" placeholder="Search..." oninput="filterTable(this,'doc-appt-tbl')"/><input type="date" class="form-control" style="width:170px;" onchange="filterDate(this,'doc-appt-tbl')"/></div>
+  <div class="card border-0 shadow-sm rounded-4"><div class="card-body p-0">
+    <table class="table hms-table mb-0 align-middle" id="doc-appt-tbl">
+      <thead><tr><th>Patient</th><th>Age</th><th>Blood</th><th>Date</th><th>Time</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>${appts.map(a=>`<tr><td>${a.patient_name}</td><td>${a.age||'-'}</td><td>${a.blood_group||'-'}</td><td>${a.date}</td><td>${a.time}</td><td>${a.reason||'-'}</td>
+        <td><span class="badge ${statusBadge(a.status)}">${a.status}</span></td>
+        <td><button class="btn btn-sm btn-outline-success" onclick="updateApptStatus(${a.id},'Completed')">Done</button></td></tr>`).join('')}
+      </tbody>
+    </table>
+  </div></div>`;
+}
+async function docRx(){
+  const rxs=await apiFetch('/prescriptions/doctor');
+  const pts=await apiFetch('/patients');
+  return `<div class="row g-4">
+    <div class="col-md-5"><div class="card border-0 shadow-sm rounded-4"><div class="card-header bg-white fw-semibold border-0 pt-3">Write Prescription</div><div class="card-body">
+      <form onsubmit="savePrescription(event)">
+        <div class="mb-3"><label class="form-label fw-semibold">Patient</label><select id="rx-patient" class="form-select" required><option value="">Select...</option>${pts.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Diagnosis</label><input id="rx-diag" class="form-control" required/></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Medicines</label><textarea id="rx-meds" class="form-control" rows="4" required></textarea></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Notes</label><textarea id="rx-notes" class="form-control" rows="2"></textarea></div>
+        <button type="submit" class="btn btn-success w-100"><i class="bi bi-check-circle me-1"></i>Save</button>
+      </form>
+    </div></div></div>
+    <div class="col-md-7"><div class="card border-0 shadow-sm rounded-4"><div class="card-header bg-white fw-semibold border-0 pt-3">Past Prescriptions</div>
+      <div class="card-body" style="max-height:520px;overflow-y:auto;">
+        ${rxs.length?rxs.map(rx=>`<div class="rx-card p-3 mb-3"><div class="d-flex justify-content-between"><strong>${rx.patient_name}</strong><small class="text-muted">${rx.created_at?.split('T')[0]||''}</small></div><div class="mt-1"><b>Dx:</b> ${rx.diagnosis}</div><div class="mt-1"><b>Rx:</b><pre class="mb-0 small" style="font-family:inherit;">${rx.medicines}</pre></div>${rx.notes?`<div class="text-muted small mt-1">${rx.notes}</div>`:''}</div>`).join(''):'<p class="text-muted text-center py-3">No prescriptions yet.</p>'}
+      </div>
+    </div></div>
+  </div>`;
+}
+async function savePrescription(e){
+  e.preventDefault();
+  await apiFetch('/prescriptions',{method:'POST',body:JSON.stringify({patient_id:document.getElementById('rx-patient').value,diagnosis:document.getElementById('rx-diag').value,medicines:document.getElementById('rx-meds').value,notes:document.getElementById('rx-notes').value})});
+  toast('Prescription saved!');renderPage('doc-rx');
+}
+function apptTableDoc(list){
+  if(!list.length)return'<p class="text-center py-3 text-muted">No appointments.</p>';
+  return`<table class="table hms-table mb-0 align-middle"><thead><tr><th>Patient</th><th>Date</th><th>Time</th><th>Reason</th><th>Status</th></tr></thead><tbody>${list.map(a=>`<tr><td>${a.patient_name}</td><td>${a.date}</td><td>${a.time}</td><td>${a.reason||'-'}</td><td><span class="badge ${statusBadge(a.status)}">${a.status}</span></td></tr>`).join('')}</tbody></table>`;
+}
+async function patDash(){
+  const appts=await apiFetch('/appointments/mine');
+  const rxs=await apiFetch('/prescriptions/mine');
+  return `<div class="row g-4 mb-4">
+    <div class="col-sm-4"><div class="stat-card bg-c1"><div class="d-flex justify-content-between"><div><div class="lbl">Appointments</div><div class="val">${appts.length}</div></div><i class="bi bi-calendar-check" style="font-size:2rem;opacity:.8;"></i></div></div></div>
+    <div class="col-sm-4"><div class="stat-card bg-c2"><div class="d-flex justify-content-between"><div><div class="lbl">Prescriptions</div><div class="val">${rxs.length}</div></div><i class="bi bi-file-medical" style="font-size:2rem;opacity:.8;"></i></div></div></div>
+    <div class="col-sm-4"><div class="stat-card bg-c3"><div class="d-flex justify-content-between"><div><div class="lbl">Pending</div><div class="val">${appts.filter(a=>a.status==='Pending').length}</div></div><i class="bi bi-clock-history" style="font-size:2rem;opacity:.8;"></i></div></div></div>
+  </div>
+  <div class="row g-4">
+    <div class="col-md-7"><div class="card border-0 shadow-sm rounded-4"><div class="card-header bg-white fw-semibold border-0 pt-3">My Appointments</div><div class="card-body p-0">
+      <table class="table hms-table mb-0 align-middle"><thead><tr><th>Doctor</th><th>Speciality</th><th>Date</th><th>Time</th><th>Status</th></tr></thead>
+      <tbody>${appts.map(a=>`<tr><td>${a.doctor_name}</td><td>${a.speciality||'-'}</td><td>${a.date}</td><td>${a.time}</td><td><span class="badge ${statusBadge(a.status)}">${a.status}</span></td></tr>`).join('')}</tbody></table>
+    </div></div></div>
+    <div class="col-md-5"><div class="card border-0 shadow-sm rounded-4"><div class="card-header bg-white fw-semibold border-0 pt-3">Latest Prescription</div><div class="card-body">
+      ${rxs[0]?`<div class="rx-card p-3"><div class="d-flex justify-content-between"><b>${rxs[0].doctor_name}</b><small class="text-muted">${rxs[0].created_at?.split('T')[0]||''}</small></div><div class="mt-2"><b>Dx:</b> ${rxs[0].diagnosis}</div><div class="mt-1"><b>Rx:</b><pre class="small mb-0" style="font-family:inherit;">${rxs[0].medicines}</pre></div>${rxs[0].notes?`<div class="text-muted small mt-1">${rxs[0].notes}</div>`:''}</div>`:'<p class="text-muted text-center py-3">No prescriptions yet.</p>'}
+      <button class="btn btn-outline-primary btn-sm mt-3 w-100" onclick="renderPage('pat-book')"><i class="bi bi-calendar-plus me-1"></i>Book Appointment</button>
+    </div></div></div>
+  </div>`;
+}
+async function patBook(){
+  const docs=await apiFetch('/doctors');
+  return `<div class="row justify-content-center"><div class="col-md-6"><div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header rounded-top-4 text-white fw-semibold" style="background:linear-gradient(135deg,#198754,#20c997);padding:18px 22px;"><i class="bi bi-calendar-plus me-2"></i>Book Appointment</div>
+    <div class="card-body p-4"><form onsubmit="bookAppointment(event)">
+      <div class="mb-3"><label class="form-label fw-semibold">Select Doctor</label><select id="book-doc" class="form-select" required><option value="">Choose...</option>${docs.map(d=>`<option value="${d.id}">${d.name} (${d.speciality||'General'})</option>`).join('')}</select></div>
+      <div class="row g-3 mb-3"><div class="col"><label class="form-label fw-semibold">Date</label><input type="date" id="book-date" class="form-control" required min="${new Date().toISOString().split('T')[0]}"/></div>
+      <div class="col"><label class="form-label fw-semibold">Time</label><input type="time" id="book-time" class="form-control" required/></div></div>
+      <div class="mb-3"><label class="form-label fw-semibold">Reason</label><textarea id="book-reason" class="form-control" rows="3" required></textarea></div>
+      <button type="submit" class="btn btn-success w-100 fw-semibold"><i class="bi bi-check-circle me-1"></i>Confirm Appointment</button>
+    </form></div>
+  </div></div></div>`;
+}
+async function bookAppointment(e){
+  e.preventDefault();
+  await apiFetch('/appointments',{method:'POST',body:JSON.stringify({doctor_id:document.getElementById('book-doc').value,date:document.getElementById('book-date').value,time:document.getElementById('book-time').value,reason:document.getElementById('book-reason').value})});
+  toast('Appointment booked! ✅');renderPage('pat-dash');
+}
+async function patRx(){
+  const rxs=await apiFetch('/prescriptions/mine');
+  return `<div class="card border-0 shadow-sm rounded-4"><div class="card-header bg-white fw-semibold border-0 pt-3">My Prescriptions</div><div class="card-body">
+    ${rxs.length?rxs.map(rx=>`<div class="rx-card p-3 mb-3"><div class="d-flex justify-content-between"><b>${rx.doctor_name}</b><small class="text-muted">${rx.created_at?.split('T')[0]||''}</small></div><div class="mt-1"><b>Dx:</b> ${rx.diagnosis}</div><div class="mt-1"><b>Medicines:</b><pre class="mb-0 small" style="font-family:inherit;">${rx.medicines}</pre></div>${rx.notes?`<div class="text-muted small mt-1">${rx.notes}</div>`:''}</div>`).join(''):'<p class="text-muted text-center py-3">No prescriptions found.</p>'}
+  </div></div>`;
+}
+function patReports(){
+  return`<div class="card border-0 shadow-sm rounded-4"><div class="card-header bg-white fw-semibold border-0 pt-3">My Medical Reports</div><div class="card-body p-0">
+    <table class="table hms-table mb-0 align-middle"><thead><tr><th>Date</th><th>Test</th><th>Status</th><th>Download</th></tr></thead>
+    <tbody>
+      <tr><td>2026-03-21</td><td>Blood CBC</td><td><span class="badge bg-success">Ready</span></td><td><button class="btn btn-sm btn-outline-primary"><i class="bi bi-download me-1"></i>PDF</button></td></tr>
+      <tr><td>2026-03-15</td><td>ECG</td><td><span class="badge bg-success">Ready</span></td><td><button class="btn btn-sm btn-outline-primary"><i class="bi bi-download me-1"></i>PDF</button></td></tr>
+      <tr><td>2026-03-10</td><td>X-Ray</td><td><span class="badge bg-warning text-dark">Pending</span></td><td><button class="btn btn-sm btn-outline-secondary" disabled>Pending</button></td></tr>
+    </tbody></table>
+  </div></div>`;
+}
+function statusBadge(s){return s==='Confirmed'?'bg-success':s==='Pending'?'bg-warning text-dark':s==='Completed'?'bg-info text-dark':'bg-danger';}
+function filterTable(input,tableId){const val=input.value.toLowerCase();document.querySelectorAll(`#${tableId} tbody tr`).forEach(tr=>{tr.style.display=tr.textContent.toLowerCase().includes(val)?'':'none';});}
+function filterStatus(sel,tableId){const val=sel.value;document.querySelectorAll(`#${tableId} tbody tr`).forEach(tr=>{tr.style.display=(!val||tr.textContent.includes(val))?'':'none';});}
+function filterDate(input,tableId){const val=input.value;document.querySelectorAll(`#${tableId} tbody tr`).forEach(tr=>{tr.style.display=(!val||tr.textContent.includes(val))?'':'none';});}
+function show(id){document.getElementById(id).style.display='';}
+function hide(id){document.getElementById(id).style.display='none';}
+window.onload=()=>{if(session?.token&&session?.user){currentRole=session.user.role;launchApp();}};
+</script>
+</body>
+</html>
