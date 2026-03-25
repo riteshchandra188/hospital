@@ -238,7 +238,12 @@ const menus = {
     {icon:'calendar-plus-fill',label:'Book Appointment',key:'pat-book'},
     {icon:'file-earmark-medical',label:'My Reports',key:'pat-reports'},
     {icon:'file-medical-fill',label:'My Prescriptions',key:'pat-rx'},
-  ]
+  ],
+  receptionist: [
+  { icon: 'speedometer2', label: 'Dashboard', key: 'rec-dash' },
+  { icon: 'clipboard2-pulse-fill', label: 'New OPD', key: 'rec-opd' },
+  { icon: 'list-ul', label: 'OPD List', key: 'rec-opd-list' },
+]
 };
 function launchApp(){
   hide('role-screen');hide('auth-screen');show('app-shell');
