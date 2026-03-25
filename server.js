@@ -39,15 +39,7 @@ const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 // Admin login
-// TEMP - remove after use
-app.get('/api/fix-admin', async (req, res) => {
-  try {
-    const hash = await bcrypt.hash('admin', 10);
-    await pool.query('UPDATE admins SET password = ? WHERE email = ?',
-      [hash, 'riteshchandra188@gmail.com']);
-    res.json({ ok: true, message: 'Admin password fixed!' });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});app.post('/api/admin/login', async (req, res) => {
+app.post('/api/admin/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     const [rows] = await pool.query('SELECT * FROM admins WHERE email = ?', [email]);
