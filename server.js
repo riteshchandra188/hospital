@@ -233,7 +233,58 @@ if (fs.existsSync(publicPath)) { app.get('/api/setup', async (req, res) => {
     res.json({ ok: true, hash });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-  app.get('*', (req, res) => res.sendFile(path.join(publicPath, 'index.html')));
+  // Upload report (Admin or Doctor)
+app.post('/api/reports/upload', auth, upload.single('file'), async (req, res) => {
+  try {
+    const { patient_id, test, date } = req.body;
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    await pool.query(
+      'INSERT INTO reports (patient_id,test,date,status,file_data,file_name,uploaded_by) VALUES (?,?,?,?,?,?,?)',
+      [patient_id, test, date, 'Ready', req.file.buffer, req.file.originalname, req.user.role]
+    );
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Get my reports (Patient)
+app.get('/api/reports/mine', auth, async (req, res) => {
+  try {
+    const [r] = await pool.query(
+      'SELECT id,test,date,status,file_name,uploaded_by FROM reports WHERE patient_id=? ORDER BY date DESC',
+      [req.user.id]
+    );
+    res.json(r);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Get all reports (Admin)
+app.get('/api/reports', auth, async (req, res) => {
+  try {
+    const [r] = await pool.query(
+      'SELECT r.id,r.test,r.date,r.status,r.file_name,r.uploaded_by,p.name as patient_name FROM reports r JOIN patients p ON r.patient_id=p.id ORDER BY r.date DESC'
+    );
+    res.json(r);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Download report
+app.get('/api/reports/:id/download', auth, async (req, res) => {
+  try {
+    const [[report]] = await pool.query('SELECT * FROM reports WHERE id=?', [req.params.id]);
+    if (!report) return res.status(404).json({ error: 'Not found' });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${report.file_name}"`);
+    res.send(report.file_data);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Delete report
+app.delete('/api/reports/:id', auth, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM reports WHERE id=?', [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});app.get('*', (req, res) => res.sendFile(path.join(publicPath, 'index.html')));
 } else {
   app.get('*', (req, res) => res.json({ status: 'MediCare HMS API running' }));
 }
