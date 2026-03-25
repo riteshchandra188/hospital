@@ -36,6 +36,8 @@ function auth(req, res, next) {
     next();
   } catch { res.status(401).json({ error: 'Invalid token' }); }
 }
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 // Admin login
 app.post('/api/admin/login', async (req, res) => {
