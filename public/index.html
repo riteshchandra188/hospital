@@ -290,6 +290,7 @@ const titles = {
   'rec-opd': 'New OPD Registration',
   'rec-opd-list': 'OPD List'
 };
+async function renderPage(key){
   setActiveNav(key);
   document.getElementById('page-title').textContent=titles[key]||key;
   const c=document.getElementById('content');
