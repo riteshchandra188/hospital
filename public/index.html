@@ -177,7 +177,12 @@ function hide(id){document.getElementById(id).style.display='none';}
 function showRoleSelect(){hide('auth-screen');show('role-screen');hide('app-shell');}
 function showAuth(role){
   authRole=role;hide('role-screen');show('auth-screen');
-  const icons={admin:'shield-lock-fill text-primary',doctor:'heart-pulse-fill text-success',patient:'person-heart text-warning'};
+  const icons = {
+  admin: 'shield-lock-fill text-primary',
+  doctor: 'heart-pulse-fill text-success',
+  patient: 'person-heart text-warning',
+  receptionist: 'person-badge-fill text-purple'
+};
   document.getElementById('auth-role-badge').innerHTML=`<span class="badge bg-light text-dark border fs-6 px-3 py-2"><i class="bi bi-${icons[role]} me-2"></i>${role.charAt(0).toUpperCase()+role.slice(1)}</span>`;
   const tabs=document.getElementById('auth-tabs');
   if(role==='patient'){tabs.style.removeProperty('display');tabs.innerHTML=`<li class="nav-item"><a class="nav-link active" href="#" onclick="switchAuthTab('login',this)">Login</a></li><li class="nav-item"><a class="nav-link" href="#" onclick="switchAuthTab('register',this)">Register</a></li>`;}
