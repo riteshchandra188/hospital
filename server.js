@@ -268,10 +268,21 @@ app.get('/api/reports', auth, async (req, res) => {
 });
 
 // Download report
-app.get('/api/reports/:id/download', auth, async (req, res) => {
+app.get('/api/reports/:id/download', async (req, res) => {
   try {
+    // Accept token from query string OR Authorization header
+    let token = req.query.token;
+    if (!token && req.headers.authorization) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+    if (!token) return res.status(401).json({ error: 'No token' });
+    
+    const jwt = require('jsonwebtoken');
+    jwt.verify(token, process.env.JWT_SECRET);
+    
     const [[report]] = await pool.query('SELECT * FROM reports WHERE id=?', [req.params.id]);
     if (!report) return res.status(404).json({ error: 'Not found' });
+    
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${report.file_name}"`);
     res.send(report.file_data);
