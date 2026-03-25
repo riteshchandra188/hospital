@@ -196,55 +196,49 @@ app.post('/api/opd', auth, async (req, res) => {
   try {
     const uhid = 'UHID' + Date.now().toString().slice(-8);
     const token_no = 'T' + Math.floor(Math.random() * 9000 + 1000);
-    const {
+    const reg_date = new Date().toISOString().split('T')[0];
+    const reg_time = new Date().toTimeString().split(' ')[0];
+    const b = req.body;
+
+    await pool.query(`INSERT INTO opd_registrations (
+      uhid, reg_date, reg_time,
       full_name, father_husband_name, dob, age, gender, blood_group, marital_status,
       mobile, alternate_mobile, email, address, city, state, pin_code,
-      department, doctor_id, visit_type,
+      department, doctor_id, visit_type, token_no,
       consultation_fee, registration_fee, total_amount, payment_mode, amount_paid, balance,
       height, weight, temperature, pulse_rate, bp_systolic, bp_diastolic, spo2, respiratory_rate,
       chief_complaint, symptoms,
-      diabetes, hypertension, heart_disease, asthma, thyroid, previous_surgeries, past_hospitalization,
-      current_medications, drug_allergies, food_allergies,
-      occupation, emergency_contact_name, emergency_contact_relation, emergency_contact_phone
-    } = req.body;
-    const reg_date = new Date().toISOString().split('T')[0];
-    const reg_time = new Date().toTimeString().split(' ')[0];
-    await pool.query(`INSERT INTO opd_registrations (
-      uhid,reg_date,reg_time,full_name,father_husband_name,dob,age,gender,blood_group,marital_status,
-      mobile,alternate_mobile,email,address,city,state,pin_code,
-      department,doctor_id,visit_type,token_no,
-      consultation_fee,registration_fee,total_amount,payment_mode,amount_paid,balance,
-      height,weight,temperature,pulse_rate,bp_systolic,bp_diastolic,spo2,respiratory_rate,
-      chief_complaint,symptoms,diabetes,hypertension,heart_disease,asthma,thyroid,
-      previous_surgeries,past_hospitalization,current_medications,drug_allergies,food_allergies,
-      occupation,emergency_contact_name,emergency_contact_relation,emergency_contact_phone,created_by
+      diabetes, hypertension, heart_disease, asthma, thyroid,
+      previous_surgeries, past_hospitalization, current_medications, drug_allergies, food_allergies,
+      occupation, emergency_contact_name, emergency_contact_relation, emergency_contact_phone,
+      created_by
     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    [uhid,reg_date,reg_time,full_name,father_husband_name||null,dob||null,age||null,
-     gender||null,blood_group||null,marital_status||null,mobile||null,alternate_mobile||null,
-     email||null,address||null,city||null,state||null,pin_code||null,
-     department||null,doctor_id||null,visit_type||'OPD',token_no,
-     consultation_fee||0,registration_fee||0,total_amount||0,payment_mode||'Cash',amount_paid||0,balance||0,
-     height||null,weight||null,temperature||null,pulse_rate||null,bp_systolic||null,bp_diastolic||null,
-     spo2||null,respiratory_rate||null,chief_complaint||null,symptoms||null,
-     diabetes?1:0,hypertension?1:0,heart_disease?1:0,asthma?1:0,thyroid?1:0,
-     previous_surgeries||null,past_hospitalization||null,current_medications||null,
-     drug_allergies||null,food_allergies||null,occupation||null,
-     emergency_contact_name||null,emergency_contact_relation||null,emergency_contact_phone||null,
-     req.user.id]);
+    [
+      uhid, reg_date, reg_time,
+      b.full_name, b.father_husband_name||null, b.dob||null, b.age||null,
+      b.gender||null, b.blood_group||null, b.marital_status||null,
+      b.mobile||null, b.alternate_mobile||null, b.email||null,
+      b.address||null, b.city||null, b.state||null, b.pin_code||null,
+      b.department||null, b.doctor_id||null, b.visit_type||'OPD', token_no,
+      b.consultation_fee||0, b.registration_fee||0, b.total_amount||0,
+      b.payment_mode||'Cash', b.amount_paid||0, b.balance||0,
+      b.height||null, b.weight||null, b.temperature||null,
+      b.pulse_rate||null, b.bp_systolic||null, b.bp_diastolic||null,
+      b.spo2||null, b.respiratory_rate||null,
+      b.chief_complaint||null, b.symptoms||null,
+      b.diabetes?1:0, b.hypertension?1:0, b.heart_disease?1:0,
+      b.asthma?1:0, b.thyroid?1:0,
+      b.previous_surgeries||null, b.past_hospitalization||null,
+      b.current_medications||null, b.drug_allergies||null, b.food_allergies||null,
+      b.occupation||null, b.emergency_contact_name||null,
+      b.emergency_contact_relation||null, b.emergency_contact_phone||null,
+      req.user.id
+    ]);
     res.json({ ok: true, uhid, token_no });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// Get all OPD (Admin)
-app.get('/api/opd', auth, async (req, res) => {
-  try {
-    const [r] = await pool.query(`
-      SELECT o.*, d.name as doctor_name 
-      FROM opd_registrations o 
-      LEFT JOIN doctors d ON o.doctor_id = d.id 
-      ORDER BY o.created_at DESC`);
-    res.json(r);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) {
+    console.error('OPD Error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // Get OPD by doctor
