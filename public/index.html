@@ -269,9 +269,27 @@ function buildSidebar(){
 function setActiveNav(key){document.querySelectorAll('#sidebar-nav .nav-link').forEach((a,i)=>a.classList.toggle('active',menus[currentRole][i]?.key===key));}
 function logout(){clearSession();hide('app-shell');showRoleSelect();}
 const titles = {
-  'admin-dash': 'Dashboard', 'admin-doctors': 'Manage Doctors',
-  'admin-receptionists': 'Manage Receptionists','admin-patients':'Patients','admin-appts':'Appointments','admin-billing':'Billing','admin-reports':'Manage Reports','doc-dash':'Dashboard','doc-appts':'My Appointments','doc-rx':'Prescriptions','doc-reports':'Upload Report','pat-dash':'Dashboard','pat-book':'Book Appointment','pat-reports':'My Reports','pat-rx':'My Prescriptions'};
-async function renderPage(key){
+  'admin-dash': 'Dashboard',
+  'admin-doctors': 'Manage Doctors',
+  'admin-receptionists': 'Manage Receptionists',
+  'admin-patients': 'Patients',
+  'admin-appts': 'Appointments',
+  'admin-billing': 'Billing',
+  'admin-reports': 'Manage Reports',
+  'admin-opd': 'OPD Records',
+  'doc-dash': 'Dashboard',
+  'doc-appts': 'My Appointments',
+  'doc-rx': 'Prescriptions',
+  'doc-reports': 'Upload Report',
+  'doc-opd': 'OPD Patients',
+  'pat-dash': 'Dashboard',
+  'pat-book': 'Book Appointment',
+  'pat-reports': 'My Reports',
+  'pat-rx': 'My Prescriptions',
+  'rec-dash': 'Reception Dashboard',
+  'rec-opd': 'New OPD Registration',
+  'rec-opd-list': 'OPD List',
+},
   setActiveNav(key);
   document.getElementById('page-title').textContent=titles[key]||key;
   const c=document.getElementById('content');
