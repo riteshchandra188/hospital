@@ -25,8 +25,6 @@ const pool = mysql.createPool({
 });
 
 const JWT_SECRET = process.env.JWT_SECRET || 'medicare_secret_2026';
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@medicare.com';
-const ADMIN_HASH = process.env.ADMIN_HASH;
 
 function auth(req, res, next) {
   const h = req.headers.authorization;
@@ -36,6 +34,7 @@ function auth(req, res, next) {
     next();
   } catch { res.status(401).json({ error: 'Invalid token' }); }
 }
+
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
@@ -43,45 +42,21 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 app.post('/api/admin/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-
     const [rows] = await pool.query('SELECT * FROM admins WHERE email = ?', [email]);
     if (rows.length === 0) return res.status(401).json({ error: 'Invalid credentials' });
-
     const admin = rows[0];
-
     if (admin.status !== 'Active') return res.status(403).json({ error: 'Admin account is inactive' });
-
     const ok = await bcrypt.compare(password, admin.password);
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
-
     const token = jwt.sign(
       { id: admin.id, role: 'admin', name: admin.name },
       JWT_SECRET,
       { expiresIn: '8h' }
     );
-
     res.json({ token, user: { id: admin.id, role: 'admin', name: admin.name, email: admin.email } });
-
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-    // Check status
-    if (admin.status !== 'Active') return res.status(403).json({ error: 'Admin account is inactive' });
 
-    // Compare password
-    const ok = await bcrypt.compare(password, admin.password);
-    if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
-
-    // Sign JWT with real admin data
-    const token = jwt.sign(
-      { id: admin.id, role: 'admin', name: admin.name },
-      JWT_SECRET,
-      { expiresIn: '8h' }
-    );
-
-    res.json({ token, user: { id: admin.id, role: 'admin', name: admin.name, email: admin.email } });
-
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
 // Doctor login
 app.post('/api/doctor/login', async (req, res) => {
   try {
@@ -254,8 +229,8 @@ app.put('/api/billing/:id/pay', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Serve frontend
-if (fs.existsSync(publicPath)) { app.get('/api/setup', async (req, res) => {
+// Setup
+app.get('/api/setup', async (req, res) => {
   try {
     const hash = await bcrypt.hash('password', 10);
     await pool.query('UPDATE doctors SET password = ?', [hash]);
@@ -263,7 +238,8 @@ if (fs.existsSync(publicPath)) { app.get('/api/setup', async (req, res) => {
     res.json({ ok: true, hash });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-  // Upload report (Admin or Doctor)
+
+// Upload report
 app.post('/api/reports/upload', auth, upload.single('file'), async (req, res) => {
   try {
     const { patient_id, test, date } = req.body;
@@ -300,19 +276,14 @@ app.get('/api/reports', auth, async (req, res) => {
 // Download report
 app.get('/api/reports/:id/download', async (req, res) => {
   try {
-    // Accept token from query string OR Authorization header
     let token = req.query.token;
     if (!token && req.headers.authorization) {
       token = req.headers.authorization.split(' ')[1];
     }
     if (!token) return res.status(401).json({ error: 'No token' });
-    
-    const jwt = require('jsonwebtoken');
-    jwt.verify(token, process.env.JWT_SECRET);
-    
+    jwt.verify(token, JWT_SECRET);
     const [[report]] = await pool.query('SELECT * FROM reports WHERE id=?', [req.params.id]);
     if (!report) return res.status(404).json({ error: 'Not found' });
-    
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${report.file_name}"`);
     res.send(report.file_data);
@@ -325,7 +296,11 @@ app.delete('/api/reports/:id', auth, async (req, res) => {
     await pool.query('DELETE FROM reports WHERE id=?', [req.params.id]);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
-});app.get('*', (req, res) => res.sendFile(path.join(publicPath, 'index.html')));
+});
+
+// Serve frontend
+if (fs.existsSync(publicPath)) {
+  app.get('*', (req, res) => res.sendFile(path.join(publicPath, 'index.html')));
 } else {
   app.get('*', (req, res) => res.json({ status: 'MediCare HMS API running' }));
 }
