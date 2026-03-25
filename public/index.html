@@ -671,6 +671,367 @@ async function patReports(){
       </tbody>
     </table></div></div>`;
 }
+  // ─── RECEPTIONIST FUNCTIONS ──────────────────────────────────
+
+async function recDash() {
+  const opds = await apiFetch('opd');
+  const today = new Date().toISOString().split('T')[0];
+  const todayOpds = opds.filter(o => o.reg_date?.split('T')[0] === today || o.reg_date === today);
+  const waiting = opds.filter(o => o.status === 'Waiting');
+  const completed = opds.filter(o => o.status === 'Completed');
+  return `
+  <div class="row g-4 mb-4">
+    <div class="col-sm-4"><div class="stat-card bg-c1"><div class="d-flex justify-content-between"><div><div class="lbl">Today's OPD</div><div class="val">${todayOpds.length}</div></div><i class="bi bi-clipboard2-pulse" style="font-size:2rem;opacity:.8"></i></div></div></div>
+    <div class="col-sm-4"><div class="stat-card bg-c2"><div class="d-flex justify-content-between"><div><div class="lbl">Waiting</div><div class="val">${waiting.length}</div></div><i class="bi bi-hourglass-split" style="font-size:2rem;opacity:.8"></i></div></div></div>
+    <div class="col-sm-4"><div class="stat-card bg-c3"><div class="d-flex justify-content-between"><div><div class="lbl">Completed</div><div class="val">${completed.length}</div></div><i class="bi bi-check-circle" style="font-size:2rem;opacity:.8"></i></div></div></div>
+  </div>
+  <div class="row g-4">
+    <div class="col-md-8">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white fw-semibold border-0 pt-3">Today's OPD Registrations</div>
+        <div class="card-body p-0">
+          <table class="table hms-table mb-0 align-middle">
+            <thead><tr><th>UHID</th><th>Patient</th><th>Doctor</th><th>Token</th><th>Status</th></tr></thead>
+            <tbody>${todayOpds.length ? todayOpds.map(o => `<tr>
+              <td><span class="badge bg-light text-dark border">${o.uhid}</span></td>
+              <td>${o.full_name}</td>
+              <td>${o.doctor_name || '-'}</td>
+              <td><span class="badge bg-primary">${o.token_no}</span></td>
+              <td><span class="badge bg-${o.status==='Waiting'?'warning text-dark':o.status==='Completed'?'success':'info'}">${o.status}</span></td>
+            </tr>`).join('') : '<tr><td colspan="5" class="text-center text-muted py-3">No OPD today</td></tr>'}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card-header bg-white fw-semibold border-0 pt-3">Quick Actions</div>
+        <div class="card-body d-flex flex-column gap-2">
+          <button class="btn btn-primary" onclick="renderPage('rec-opd')"><i class="bi bi-plus-circle me-2"></i>New OPD Registration</button>
+          <button class="btn btn-success" onclick="renderPage('rec-opd-list')"><i class="bi bi-list-ul me-2"></i>View All OPD</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function recOPDForm() {
+  const docs = await apiFetch('doctors');
+  return `
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header bg-white border-0 pt-3 pb-0">
+      <h5 class="fw-bold"><i class="bi bi-clipboard2-pulse-fill text-primary me-2"></i>OPD Registration Form</h5>
+      <p class="text-muted small">All fields marked * are required</p>
+    </div>
+    <div class="card-body">
+    <form onsubmit="submitOPD(event)">
+
+      <div class="p-3 mb-3 rounded-3" style="background:#f0f7ff;border-left:4px solid #0d6efd">
+        <h6 class="fw-bold text-primary mb-3"><i class="bi bi-person-fill me-2"></i>1. Patient Personal Details</h6>
+        <div class="row g-3">
+          <div class="col-md-6"><label class="form-label fw-semibold">Full Name *</label><input id="opd-name" class="form-control" required></div>
+          <div class="col-md-6"><label class="form-label fw-semibold">Father's / Husband's Name</label><input id="opd-fhname" class="form-control"></div>
+          <div class="col-md-3"><label class="form-label fw-semibold">Date of Birth</label><input type="date" id="opd-dob" class="form-control"></div>
+          <div class="col-md-2"><label class="form-label fw-semibold">Age</label><input type="number" id="opd-age" class="form-control" min="0" max="150"></div>
+          <div class="col-md-3"><label class="form-label fw-semibold">Gender</label>
+            <select id="opd-gender" class="form-select"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+          <div class="col-md-4"><label class="form-label fw-semibold">Blood Group</label>
+            <select id="opd-blood" class="form-select"><option value="">Select</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select></div>
+          <div class="col-md-4"><label class="form-label fw-semibold">Marital Status</label>
+            <select id="opd-marital" class="form-select"><option value="">Select</option><option>Single</option><option>Married</option><option>Divorced</option><option>Widowed</option></select></div>
+          <div class="col-md-4"><label class="form-label fw-semibold">Mobile No. *</label><input id="opd-mobile" class="form-control" required></div>
+          <div class="col-md-4"><label class="form-label fw-semibold">Alternate No.</label><input id="opd-altmobile" class="form-control"></div>
+          <div class="col-md-4"><label class="form-label fw-semibold">Email</label><input type="email" id="opd-email" class="form-control"></div>
+          <div class="col-md-12"><label class="form-label fw-semibold">Address</label><input id="opd-address" class="form-control"></div>
+          <div class="col-md-4"><label class="form-label fw-semibold">City</label><input id="opd-city" class="form-control"></div>
+          <div class="col-md-4"><label class="form-label fw-semibold">State</label><input id="opd-state" class="form-control"></div>
+          <div class="col-md-4"><label class="form-label fw-semibold">Pin Code</label><input id="opd-pin" class="form-control"></div>
+        </div>
+      </div>
+
+      <div class="p-3 mb-3 rounded-3" style="background:#f0fff4;border-left:4px solid #198754">
+        <h6 class="fw-bold text-success mb-3"><i class="bi bi-hospital-fill me-2"></i>2. Consultant / Doctor Details</h6>
+        <div class="row g-3">
+          <div class="col-md-4"><label class="form-label fw-semibold">Department</label><input id="opd-dept" class="form-control"></div>
+          <div class="col-md-4"><label class="form-label fw-semibold">Consultant Doctor *</label>
+            <select id="opd-doctor" class="form-select" required>
+              <option value="">Select Doctor</option>
+              ${docs.map(d => `<option value="${d.id}">Dr. ${d.name} (${d.speciality || 'General'})</option>`).join('')}
+            </select></div>
+          <div class="col-md-4"><label class="form-label fw-semibold">Visit Type</label>
+            <select id="opd-visit" class="form-select"><option>OPD</option><option>Emergency</option><option>Follow-up</option></select></div>
+        </div>
+      </div>
+
+      <div class="p-3 mb-3 rounded-3" style="background:#fff8f0;border-left:4px solid #fd7e14">
+        <h6 class="fw-bold text-warning mb-3"><i class="bi bi-credit-card-fill me-2"></i>3. Consultation Fees & Payment</h6>
+        <div class="row g-3">
+          <div class="col-md-3"><label class="form-label fw-semibold">Consultation Fee (₹)</label><input type="number" id="opd-cfee" class="form-control" value="0" oninput="calcTotal()"></div>
+          <div class="col-md-3"><label class="form-label fw-semibold">Registration Fee (₹)</label><input type="number" id="opd-rfee" class="form-control" value="0" oninput="calcTotal()"></div>
+          <div class="col-md-3"><label class="form-label fw-semibold">Total Amount (₹)</label><input type="number" id="opd-total" class="form-control bg-light" readonly></div>
+          <div class="col-md-3"><label class="form-label fw-semibold">Payment Mode</label>
+            <select id="opd-paymode" class="form-select"><option>Cash</option><option>UPI/Card</option><option>Insurance</option><option>Corporate</option><option>Free/Scheme</option></select></div>
+          <div class="col-md-3"><label class="form-label fw-semibold">Amount Paid (₹)</label><input type="number" id="opd-paid" class="form-control" value="0" oninput="calcBalance()"></div>
+          <div class="col-md-3"><label class="form-label fw-semibold">Balance (₹)</label><input type="number" id="opd-balance" class="form-control bg-light" readonly></div>
+        </div>
+      </div>
+
+      <div class="p-3 mb-3 rounded-3" style="background:#fdf0ff;border-left:4px solid #6f42c1">
+        <h6 class="fw-bold mb-3" style="color:#6f42c1"><i class="bi bi-heart-pulse-fill me-2"></i>4. Patient Vitals</h6>
+        <div class="row g-3">
+          <div class="col-md-2"><label class="form-label fw-semibold">Height (cm)</label><input type="number" id="opd-height" class="form-control"></div>
+          <div class="col-md-2"><label class="form-label fw-semibold">Weight (kg)</label><input type="number" id="opd-weight" class="form-control"></div>
+          <div class="col-md-2"><label class="form-label fw-semibold">Temp (°C)</label><input type="number" id="opd-temp" class="form-control" step="0.1"></div>
+          <div class="col-md-2"><label class="form-label fw-semibold">Pulse (bpm)</label><input type="number" id="opd-pulse" class="form-control"></div>
+          <div class="col-md-2"><label class="form-label fw-semibold">BP Systolic</label><input type="number" id="opd-bps" class="form-control"></div>
+          <div class="col-md-2"><label class="form-label fw-semibold">BP Diastolic</label><input type="number" id="opd-bpd" class="form-control"></div>
+          <div class="col-md-2"><label class="form-label fw-semibold">SpO2 (%)</label><input type="number" id="opd-spo2" class="form-control" step="0.1"></div>
+          <div class="col-md-2"><label class="form-label fw-semibold">Resp. Rate</label><input type="number" id="opd-rr" class="form-control"></div>
+        </div>
+      </div>
+
+      <div class="p-3 mb-3 rounded-3" style="background:#fff0f3;border-left:4px solid #dc3545">
+        <h6 class="fw-bold text-danger mb-3"><i class="bi bi-stethoscope me-2"></i>5. Chief Complaint</h6>
+        <div class="row g-3">
+          <div class="col-md-6"><label class="form-label fw-semibold">Chief Complaint *</label><textarea id="opd-complaint" class="form-control" rows="2" required></textarea></div>
+          <div class="col-md-6"><label class="form-label fw-semibold">Symptoms</label><textarea id="opd-symptoms" class="form-control" rows="2"></textarea></div>
+        </div>
+      </div>
+
+      <div class="p-3 mb-3 rounded-3" style="background:#f8f9fa;border-left:4px solid #6c757d">
+        <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-journal-medical me-2"></i>6. Previous Medical History</h6>
+        <div class="row g-3">
+          <div class="col-12">
+            <div class="d-flex flex-wrap gap-4">
+              <div class="form-check"><input class="form-check-input" type="checkbox" id="opd-diabetes"><label class="form-check-label" for="opd-diabetes">Diabetes</label></div>
+              <div class="form-check"><input class="form-check-input" type="checkbox" id="opd-htn"><label class="form-check-label" for="opd-htn">Hypertension</label></div>
+              <div class="form-check"><input class="form-check-input" type="checkbox" id="opd-heart"><label class="form-check-label" for="opd-heart">Heart Disease</label></div>
+              <div class="form-check"><input class="form-check-input" type="checkbox" id="opd-asthma"><label class="form-check-label" for="opd-asthma">Asthma</label></div>
+              <div class="form-check"><input class="form-check-input" type="checkbox" id="opd-thyroid"><label class="form-check-label" for="opd-thyroid">Thyroid</label></div>
+            </div>
+          </div>
+          <div class="col-md-6"><label class="form-label fw-semibold">Previous Surgeries</label><input id="opd-surgeries" class="form-control"></div>
+          <div class="col-md-6"><label class="form-label fw-semibold">Past Hospitalization</label><input id="opd-hosp" class="form-control"></div>
+        </div>
+      </div>
+
+      <div class="p-3 mb-3 rounded-3" style="background:#f0fff4;border-left:4px solid #20c997">
+        <h6 class="fw-bold mb-3" style="color:#20c997"><i class="bi bi-capsule me-2"></i>7. Medication & Allergies</h6>
+        <div class="row g-3">
+          <div class="col-md-4"><label class="form-label fw-semibold">Current Medications</label><input id="opd-meds" class="form-control"></div>
+          <div class="col-md-4"><label class="form-label fw-semibold">Drug Allergies</label><input id="opd-drugallergy" class="form-control"></div>
+          <div class="col-md-4"><label class="form-label fw-semibold">Food Allergies</label><input id="opd-foodallergy" class="form-control"></div>
+        </div>
+      </div>
+
+      <div class="p-3 mb-3 rounded-3" style="background:#fff8f0;border-left:4px solid #ffc107">
+        <h6 class="fw-bold text-warning mb-3"><i class="bi bi-info-circle-fill me-2"></i>8. Additional Information</h6>
+        <div class="row g-3">
+          <div class="col-md-3"><label class="form-label fw-semibold">Occupation</label><input id="opd-occ" class="form-control"></div>
+          <div class="col-md-3"><label class="form-label fw-semibold">Emergency Contact Name</label><input id="opd-ecname" class="form-control"></div>
+          <div class="col-md-3"><label class="form-label fw-semibold">Relationship</label><input id="opd-ecrel" class="form-control"></div>
+          <div class="col-md-3"><label class="form-label fw-semibold">Emergency Phone</label><input id="opd-ecphone" class="form-control"></div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-3 mt-3">
+        <button type="submit" class="btn btn-primary btn-lg px-5"><i class="bi bi-check-circle me-2"></i>Register Patient</button>
+        <button type="reset" class="btn btn-outline-secondary btn-lg px-4"><i class="bi bi-arrow-counterclockwise me-2"></i>Reset</button>
+      </div>
+
+    </form>
+    </div>
+  </div>
+
+  <div class="modal fade" id="opdSuccessModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-4 text-center p-4">
+        <div class="mb-3"><i class="bi bi-check-circle-fill text-success" style="font-size:4rem"></i></div>
+        <h4 class="fw-bold">Registration Successful!</h4>
+        <p class="text-muted">Patient has been registered and forwarded to the doctor.</p>
+        <div class="d-flex justify-content-center gap-3 mb-2">
+          <div class="p-3 rounded-3 bg-light"><div class="text-muted small">UHID</div><div class="fw-bold fs-5" id="success-uhid">-</div></div>
+          <div class="p-3 rounded-3 bg-light"><div class="text-muted small">Token No.</div><div class="fw-bold fs-5" id="success-token">-</div></div>
+        </div>
+        <button class="btn btn-primary mt-2" onclick="bootstrap.Modal.getInstance(document.getElementById('opdSuccessModal')).hide();renderPage('rec-opd')">New Registration</button>
+        <button class="btn btn-outline-secondary mt-2 ms-2" onclick="bootstrap.Modal.getInstance(document.getElementById('opdSuccessModal')).hide();renderPage('rec-opd-list')">View OPD List</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function calcTotal() {
+  const c = parseFloat(document.getElementById('opd-cfee').value) || 0;
+  const r = parseFloat(document.getElementById('opd-rfee').value) || 0;
+  document.getElementById('opd-total').value = c + r;
+  calcBalance();
+}
+
+function calcBalance() {
+  const total = parseFloat(document.getElementById('opd-total').value) || 0;
+  const paid = parseFloat(document.getElementById('opd-paid').value) || 0;
+  document.getElementById('opd-balance').value = total - paid;
+}
+
+async function submitOPD(e) {
+  e.preventDefault();
+  try {
+    const data = await apiFetch('opd', { method: 'POST', body: JSON.stringify({
+      full_name: document.getElementById('opd-name').value,
+      father_husband_name: document.getElementById('opd-fhname').value,
+      dob: document.getElementById('opd-dob').value,
+      age: document.getElementById('opd-age').value,
+      gender: document.getElementById('opd-gender').value,
+      blood_group: document.getElementById('opd-blood').value,
+      marital_status: document.getElementById('opd-marital').value,
+      mobile: document.getElementById('opd-mobile').value,
+      alternate_mobile: document.getElementById('opd-altmobile').value,
+      email: document.getElementById('opd-email').value,
+      address: document.getElementById('opd-address').value,
+      city: document.getElementById('opd-city').value,
+      state: document.getElementById('opd-state').value,
+      pin_code: document.getElementById('opd-pin').value,
+      department: document.getElementById('opd-dept').value,
+      doctor_id: document.getElementById('opd-doctor').value,
+      visit_type: document.getElementById('opd-visit').value,
+      consultation_fee: document.getElementById('opd-cfee').value,
+      registration_fee: document.getElementById('opd-rfee').value,
+      total_amount: document.getElementById('opd-total').value,
+      payment_mode: document.getElementById('opd-paymode').value,
+      amount_paid: document.getElementById('opd-paid').value,
+      balance: document.getElementById('opd-balance').value,
+      height: document.getElementById('opd-height').value,
+      weight: document.getElementById('opd-weight').value,
+      temperature: document.getElementById('opd-temp').value,
+      pulse_rate: document.getElementById('opd-pulse').value,
+      bp_systolic: document.getElementById('opd-bps').value,
+      bp_diastolic: document.getElementById('opd-bpd').value,
+      spo2: document.getElementById('opd-spo2').value,
+      respiratory_rate: document.getElementById('opd-rr').value,
+      chief_complaint: document.getElementById('opd-complaint').value,
+      symptoms: document.getElementById('opd-symptoms').value,
+      diabetes: document.getElementById('opd-diabetes').checked,
+      hypertension: document.getElementById('opd-htn').checked,
+      heart_disease: document.getElementById('opd-heart').checked,
+      asthma: document.getElementById('opd-asthma').checked,
+      thyroid: document.getElementById('opd-thyroid').checked,
+      previous_surgeries: document.getElementById('opd-surgeries').value,
+      past_hospitalization: document.getElementById('opd-hosp').value,
+      current_medications: document.getElementById('opd-meds').value,
+      drug_allergies: document.getElementById('opd-drugallergy').value,
+      food_allergies: document.getElementById('opd-foodallergy').value,
+      occupation: document.getElementById('opd-occ').value,
+      emergency_contact_name: document.getElementById('opd-ecname').value,
+      emergency_contact_relation: document.getElementById('opd-ecrel').value,
+      emergency_contact_phone: document.getElementById('opd-ecphone').value
+    })});
+    document.getElementById('success-uhid').textContent = data.uhid;
+    document.getElementById('success-token').textContent = data.token_no;
+    new bootstrap.Modal(document.getElementById('opdSuccessModal')).show();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function recOPDList() {
+  const opds = await apiFetch('opd');
+  return `
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <input class="form-control w-25" placeholder="Search..." oninput="filterTable(this,'opd-tbl')">
+    <button class="btn btn-primary" onclick="renderPage('rec-opd')"><i class="bi bi-plus-lg me-1"></i>New OPD</button>
+  </div>
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-0">
+      <table class="table hms-table mb-0 align-middle" id="opd-tbl">
+        <thead><tr><th>UHID</th><th>Patient</th><th>Mobile</th><th>Doctor</th><th>Token</th><th>Visit</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>${opds.length ? opds.map(o => `<tr>
+          <td><span class="badge bg-light text-dark border">${o.uhid}</span></td>
+          <td>${o.full_name}</td>
+          <td>${o.mobile || '-'}</td>
+          <td>${o.doctor_name || '-'}</td>
+          <td><span class="badge bg-primary">${o.token_no}</span></td>
+          <td>${o.visit_type}</td>
+          <td><span class="badge bg-${o.status==='Waiting'?'warning text-dark':o.status==='Completed'?'success':o.status==='With Doctor'?'info':'secondary'}">${o.status}</span></td>
+          <td>${o.reg_date?.split('T')[0] || o.reg_date}</td>
+        </tr>`).join('') : '<tr><td colspan="8" class="text-center text-muted py-3">No OPD records found</td></tr>'}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+async function adminOPD() {
+  const opds = await apiFetch('opd');
+  return `
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <input class="form-control w-25" placeholder="Search..." oninput="filterTable(this,'admin-opd-tbl')">
+    <select class="form-select" style="width:160px" onchange="filterStatus(this,'admin-opd-tbl')">
+      <option value="">All Status</option>
+      <option>Waiting</option><option>With Doctor</option><option>Completed</option><option>Cancelled</option>
+    </select>
+  </div>
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-0">
+      <table class="table hms-table mb-0 align-middle" id="admin-opd-tbl">
+        <thead><tr><th>UHID</th><th>Patient</th><th>Mobile</th><th>Doctor</th><th>Token</th><th>Complaint</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>${opds.length ? opds.map(o => `<tr>
+          <td><span class="badge bg-light text-dark border">${o.uhid}</span></td>
+          <td>${o.full_name}</td>
+          <td>${o.mobile || '-'}</td>
+          <td>${o.doctor_name || '-'}</td>
+          <td><span class="badge bg-primary">${o.token_no}</span></td>
+          <td>${o.chief_complaint?.substring(0,30) || '-'}</td>
+          <td><span class="badge bg-${o.status==='Waiting'?'warning text-dark':o.status==='Completed'?'success':o.status==='With Doctor'?'info':'secondary'}">${o.status}</span></td>
+          <td>
+            <select class="form-select form-select-sm" style="width:140px" onchange="updateOPDStatus(${o.id},this.value)">
+              <option ${o.status==='Waiting'?'selected':''}>Waiting</option>
+              <option ${o.status==='With Doctor'?'selected':''}>With Doctor</option>
+              <option ${o.status==='Completed'?'selected':''}>Completed</option>
+              <option ${o.status==='Cancelled'?'selected':''}>Cancelled</option>
+            </select>
+          </td>
+        </tr>`).join('') : '<tr><td colspan="8" class="text-center text-muted py-3">No OPD records</td></tr>'}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+async function docOPD() {
+  const opds = await apiFetch('opd/doctor');
+  return `
+  <div class="mb-3"><input class="form-control w-25" placeholder="Search..." oninput="filterTable(this,'doc-opd-tbl')"></div>
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-0">
+      <table class="table hms-table mb-0 align-middle" id="doc-opd-tbl">
+        <thead><tr><th>UHID</th><th>Patient</th><th>Age</th><th>Mobile</th><th>Token</th><th>Complaint</th><th>Vitals</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>${opds.length ? opds.map(o => `<tr>
+          <td><span class="badge bg-light text-dark border">${o.uhid}</span></td>
+          <td><strong>${o.full_name}</strong><br><small class="text-muted">${o.visit_type}</small></td>
+          <td>${o.age || '-'}</td>
+          <td>${o.mobile || '-'}</td>
+          <td><span class="badge bg-primary">${o.token_no}</span></td>
+          <td>${o.chief_complaint?.substring(0,30) || '-'}</td>
+          <td><small>
+            ${o.bp_systolic ? `BP: ${o.bp_systolic}/${o.bp_diastolic}<br>` : ''}
+            ${o.pulse_rate ? `Pulse: ${o.pulse_rate}<br>` : ''}
+            ${o.temperature ? `Temp: ${o.temperature}°C` : ''}
+          </small></td>
+          <td><span class="badge bg-${o.status==='Waiting'?'warning text-dark':o.status==='Completed'?'success':o.status==='With Doctor'?'info':'secondary'}">${o.status}</span></td>
+          <td>
+            <select class="form-select form-select-sm" style="width:140px" onchange="updateOPDStatus(${o.id},this.value)">
+              <option ${o.status==='Waiting'?'selected':''}>Waiting</option>
+              <option ${o.status==='With Doctor'?'selected':''}>With Doctor</option>
+              <option ${o.status==='Completed'?'selected':''}>Completed</option>
+              <option ${o.status==='Cancelled'?'selected':''}>Cancelled</option>
+            </select>
+          </td>
+        </tr>`).join('') : '<tr><td colspan="9" class="text-center text-muted py-3">No OPD patients assigned</td></tr>'}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+async function updateOPDStatus(id, status) {
+  await apiFetch(`opd/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) });
+  toast(`Status updated to ${status}`);
+}
 async function patRx(){
   const rxs=await apiFetch('prescriptions/mine');
   return `<div class="card border-0 shadow-sm rounded-4"><div class="card-header bg-white fw-semibold border-0 pt-3">My Prescriptions</div>
