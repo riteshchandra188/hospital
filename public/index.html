@@ -288,8 +288,8 @@ const titles = {
   'pat-rx': 'My Prescriptions',
   'rec-dash': 'Reception Dashboard',
   'rec-opd': 'New OPD Registration',
-  'rec-opd-list': 'OPD List',
-},
+  'rec-opd-list': 'OPD List'
+};
   setActiveNav(key);
   document.getElementById('page-title').textContent=titles[key]||key;
   const c=document.getElementById('content');
@@ -297,6 +297,7 @@ const titles = {
   try{
     switch(key){
       case 'admin-dash':c.innerHTML=await adminDash();break;
+      case 'admin-doctors':c.innerHTML=await adminDoctors();break;
       case 'admin-receptionists': c.innerHTML = await adminReceptionists(); break;
       case 'admin-patients':c.innerHTML=await adminPatients();break;
       case 'admin-appts':c.innerHTML=await adminAppts();break;
