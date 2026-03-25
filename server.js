@@ -44,12 +44,26 @@ app.post('/api/admin/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Look up admin from DB
     const [rows] = await pool.query('SELECT * FROM admins WHERE email = ?', [email]);
     if (rows.length === 0) return res.status(401).json({ error: 'Invalid credentials' });
 
     const admin = rows[0];
 
+    if (admin.status !== 'Active') return res.status(403).json({ error: 'Admin account is inactive' });
+
+    const ok = await bcrypt.compare(password, admin.password);
+    if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
+
+    const token = jwt.sign(
+      { id: admin.id, role: 'admin', name: admin.name },
+      JWT_SECRET,
+      { expiresIn: '8h' }
+    );
+
+    res.json({ token, user: { id: admin.id, role: 'admin', name: admin.name, email: admin.email } });
+
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
     // Check status
     if (admin.status !== 'Active') return res.status(403).json({ error: 'Admin account is inactive' });
 
