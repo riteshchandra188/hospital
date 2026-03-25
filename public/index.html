@@ -302,14 +302,19 @@ const titles = {
       case 'admin-appts':c.innerHTML=await adminAppts();break;
       case 'admin-billing':c.innerHTML=await adminBilling();break;
       case 'admin-reports':c.innerHTML=await adminReports();break;
+      case 'admin-opd': c.innerHTML = await adminOPD(); break;
       case 'doc-dash':c.innerHTML=await docDash();break;
       case 'doc-appts':c.innerHTML=await docAppts();break;
       case 'doc-rx':c.innerHTML=await docRx();break;
       case 'doc-reports':c.innerHTML=await docReports();break;
+      case 'doc-opd': c.innerHTML = await docOPD(); break;
       case 'pat-dash':c.innerHTML=await patDash();break;
       case 'pat-book':c.innerHTML=await patBook();break;
       case 'pat-reports':c.innerHTML=await patReports();break;
       case 'pat-rx':c.innerHTML=await patRx();break;
+      case 'rec-dash': c.innerHTML = await recDash(); break;
+      case 'rec-opd': c.innerHTML = await recOPDForm(); break;
+      case 'rec-opd-list': c.innerHTML = await recOPDList(); break;
     }
   }catch(ex){c.innerHTML=`<div class="alert alert-danger">${ex.message}</div>`;}
 }
