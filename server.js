@@ -132,7 +132,63 @@ app.delete('/api/doctors/:id', auth, async (req, res) => {
   try { await pool.query('DELETE FROM doctors WHERE id=?', [req.params.id]); res.json({ ok: true }); }
   catch (e) { res.status(500).json({ error: e.message }); }
 });
+// ─── Receptionists ───────────────────────────────────────────
 
+// Receptionist login
+app.post('/api/receptionist/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const [rows] = await pool.query('SELECT * FROM receptionists WHERE email = ?', [email]);
+    if (!rows.length) return res.status(401).json({ error: 'Invalid credentials' });
+    const rec = rows[0];
+    if (rec.status !== 'Active') return res.status(403).json({ error: 'Account is inactive' });
+    const ok = await bcrypt.compare(password, rec.password);
+    if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
+    const token = jwt.sign({ id: rec.id, role: 'receptionist', name: rec.name }, JWT_SECRET, { expiresIn: '8h' });
+    res.json({ token, user: { id: rec.id, role: 'receptionist', name: rec.name, email: rec.email } });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Get all receptionists (Admin)
+app.get('/api/receptionists', auth, async (req, res) => {
+  try {
+    const [r] = await pool.query('SELECT id, name, email, phone, status, created_at FROM receptionists');
+    res.json(r);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Add receptionist (Admin)
+app.post('/api/receptionists', auth, async (req, res) => {
+  try {
+    const { name, email, password, phone } = req.body;
+    const hash = await bcrypt.hash(password, 10);
+    await pool.query(
+      'INSERT INTO receptionists (name, email, password, phone) VALUES (?,?,?,?)',
+      [name, email, hash, phone||null]
+    );
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Update receptionist (Admin)
+app.put('/api/receptionists/:id', auth, async (req, res) => {
+  try {
+    const { name, email, phone, status } = req.body;
+    await pool.query(
+      'UPDATE receptionists SET name=?, email=?, phone=?, status=? WHERE id=?',
+      [name, email, phone||null, status, req.params.id]
+    );
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Delete receptionist (Admin)
+app.delete('/api/receptionists/:id', auth, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM receptionists WHERE id=?', [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 // Patients
 app.get('/api/patients', auth, async (req, res) => {
   try { const [r] = await pool.query('SELECT id,name,age,blood_group,phone,email,status FROM patients'); res.json(r); }
