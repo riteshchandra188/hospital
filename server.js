@@ -223,7 +223,62 @@ app.put('/api/billing/:id/pay', auth, async (req, res) => {
 });
 
 // Serve frontend
-if (fs.existsSync(publicPath)) { app.get('/api/setup', async (req, res) => {
+if (fs.existsSync(publicPath)) { const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+// Upload report (Admin or Doctor)
+app.post('/api/reports/upload', auth, upload.single('file'), async (req, res) => {
+  try {
+    const { patient_id, test, date } = req.body;
+    const file = req.file;
+    if (!file) return res.status(400).json({ error: 'No file uploaded' });
+    await pool.query(
+      'INSERT INTO reports (patient_id, test, date, status, file_data, file_name, uploaded_by) VALUES (?,?,?,?,?,?,?)',
+      [patient_id, test, date, 'Ready', file.buffer, file.originalname, req.user.role]
+    );
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Get reports for patient
+app.get('/api/reports/mine', auth, async (req, res) => {
+  try {
+    const [r] = await pool.query(
+      'SELECT id, test, date, status, file_name, uploaded_by FROM reports WHERE patient_id = ? ORDER BY date DESC',
+      [req.user.id]
+    );
+    res.json(r);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Get all reports (Admin)
+app.get('/api/reports', auth, async (req, res) => {
+  try {
+    const [r] = await pool.query(
+      'SELECT r.id, r.test, r.date, r.status, r.file_name, r.uploaded_by, p.name as patient_name FROM reports r JOIN patients p ON r.patient_id = p.id ORDER BY r.date DESC'
+    );
+    res.json(r);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Download report
+app.get('/api/reports/:id/download', auth, async (req, res) => {
+  try {
+    const [[report]] = await pool.query('SELECT * FROM reports WHERE id = ?', [req.params.id]);
+    if (!report) return res.status(404).json({ error: 'Report not found' });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${report.file_name}"`);
+    res.send(report.file_data);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Delete report (Admin only)
+app.delete('/api/reports/:id', auth, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM reports WHERE id = ?', [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});app.get('/api/setup', async (req, res) => {
   try {
     const hash = await bcrypt.hash('password', 10);
     await pool.query('UPDATE doctors SET password = ?', [hash]);
