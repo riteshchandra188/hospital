@@ -532,7 +532,9 @@ async function uploadReport(e,role){
   toast('Report uploaded successfully!');
   renderPage(role==='doctor'?'doc-reports':'admin-reports');
 }
-function downloadReport(id){window.open(API+'reports/'+id+'/download','_blank');}
+function downloadReport(id){
+  window.open(API+'reports/'+id+'/download?token='+session.token,'_blank');
+}
 async function deleteReport(id){if(!confirm('Delete this report?'))return;await apiFetch('reports/'+id,{method:'DELETE'});toast('Report deleted','error');renderPage('admin-reports');}
 function apptTableDoc(list){if(!list.length)return'<p class="text-center py-3 text-muted">No appointments.</p>';return`<table class="table hms-table mb-0 align-middle"><thead><tr><th>Patient</th><th>Date</th><th>Time</th><th>Reason</th><th>Status</th></tr></thead><tbody>${list.map(a=>`<tr><td>${a.patient_name}</td><td>${a.date}</td><td>${a.time}</td><td>${a.reason||'-'}</td><td><span class="badge ${statusBadge(a.status)}">${a.status}</span></td></tr>`).join('')}</tbody></table>`;}
 function statusBadge(s){return s==='Confirmed'?'bg-success':s==='Pending'?'bg-warning text-dark':s==='Completed'?'bg-info text-dark':'bg-danger';}
