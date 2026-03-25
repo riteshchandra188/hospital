@@ -43,15 +43,31 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 app.post('/api/admin/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (email !== ADMIN_EMAIL) return res.status(401).json({ error: 'Invalid credentials' });
-    if (!ADMIN_HASH) return res.status(500).json({ error: 'ADMIN_HASH not set in environment' });
-    const ok = await bcrypt.compare(password, ADMIN_HASH);
+
+    // Look up admin from DB
+    const [rows] = await pool.query('SELECT * FROM admins WHERE email = ?', [email]);
+    if (rows.length === 0) return res.status(401).json({ error: 'Invalid credentials' });
+
+    const admin = rows[0];
+
+    // Check status
+    if (admin.status !== 'Active') return res.status(403).json({ error: 'Admin account is inactive' });
+
+    // Compare password
+    const ok = await bcrypt.compare(password, admin.password);
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
-    const token = jwt.sign({ id: 0, role: 'admin', name: 'Admin' }, JWT_SECRET, { expiresIn: '8h' });
-    res.json({ token, user: { id: 0, role: 'admin', name: 'Admin' } });
+
+    // Sign JWT with real admin data
+    const token = jwt.sign(
+      { id: admin.id, role: 'admin', name: admin.name },
+      JWT_SECRET,
+      { expiresIn: '8h' }
+    );
+
+    res.json({ token, user: { id: admin.id, role: 'admin', name: admin.name, email: admin.email } });
+
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-
 // Doctor login
 app.post('/api/doctor/login', async (req, res) => {
   try {
