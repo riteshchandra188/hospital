@@ -231,7 +231,7 @@ app.post('/api/opd', auth, async (req, res) => {
      drug_allergies||null,food_allergies||null,occupation||null,
      emergency_contact_name||null,emergency_contact_relation||null,emergency_contact_phone||null,
      req.user.id]);
-    res.json({ ok: true, uhid, token_no });
+     res.json({ ok: true, uhid, token_no, id: r.insertId });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
