@@ -1002,37 +1002,64 @@ async function adminOPD() {
 
 async function docOPD() {
   const opds = await apiFetch('opd/doctor');
+  const rows = opds.map(o => `
+    <tr>
+      <td><strong>${o.full_name}</strong><br><small class="text-muted">UHID: ${o.uhid} | Token: ${o.token_no}</small></td>
+      <td>${o.age||'-'} / ${o.gender||'-'}</td>
+      <td>${o.mobile||'-'}</td>
+      <td>${o.chief_complaint||'-'}</td>
+      <td><span class="badge ${o.status==='Consulted'?'bg-success':'bg-warning text-dark'}">${o.status||'Pending'}</span></td>
+      <td>
+        <button class="btn btn-sm btn-primary me-1" onclick="opdConsultModal(${JSON.stringify(o).replace(/"/g,'&quot;')})">
+          <i class="bi bi-pencil-square"></i> Consult
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="printOPDSlip(${JSON.stringify(o).replace(/"/g,'&quot;')})">
+          <i class="bi bi-printer"></i> Slip
+        </button>
+      </td>
+    </tr>`).join('');
   return `
-  <div class="mb-3"><input class="form-control w-25" placeholder="Search..." oninput="filterTable(this,'doc-opd-tbl')"></div>
-  <div class="card border-0 shadow-sm rounded-4">
-    <div class="card-body p-0">
-      <table class="table hms-table mb-0 align-middle" id="doc-opd-tbl">
-        <thead><tr><th>UHID</th><th>Patient</th><th>Age</th><th>Mobile</th><th>Token</th><th>Complaint</th><th>Vitals</th><th>Status</th><th>Action</th></tr></thead>
-        <tbody>${opds.length ? opds.map(o => `<tr>
-          <td><span class="badge bg-light text-dark border">${o.uhid}</span></td>
-          <td><strong>${o.full_name}</strong><br><small class="text-muted">${o.visit_type}</small></td>
-          <td>${o.age || '-'}</td>
-          <td>${o.mobile || '-'}</td>
-          <td><span class="badge bg-primary">${o.token_no}</span></td>
-          <td>${o.chief_complaint?.substring(0,30) || '-'}</td>
-          <td><small>
-            ${o.bp_systolic ? `BP: ${o.bp_systolic}/${o.bp_diastolic}<br>` : ''}
-            ${o.pulse_rate ? `Pulse: ${o.pulse_rate}<br>` : ''}
-            ${o.temperature ? `Temp: ${o.temperature}°C` : ''}
-          </small></td>
-          <td><span class="badge bg-${o.status==='Waiting'?'warning text-dark':o.status==='Completed'?'success':o.status==='With Doctor'?'info':'secondary'}">${o.status}</span></td>
-          <td>
-            <select class="form-select form-select-sm" style="width:140px" onchange="updateOPDStatus(${o.id},this.value)">
-              <option ${o.status==='Waiting'?'selected':''}>Waiting</option>
-              <option ${o.status==='With Doctor'?'selected':''}>With Doctor</option>
-              <option ${o.status==='Completed'?'selected':''}>Completed</option>
-              <option ${o.status==='Cancelled'?'selected':''}>Cancelled</option>
-            </select>
-          </td>
-        </tr>`).join('') : '<tr><td colspan="9" class="text-center text-muted py-3">No OPD patients assigned</td></tr>'}</tbody>
-      </table>
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-header bg-white fw-semibold border-0 pt-3">OPD Patients</div>
+      <div class="card-body p-0">
+        <table class="table hms-table mb-0 align-middle">
+          <thead><tr><th>Patient</th><th>Age/Sex</th><th>Mobile</th><th>Complaint</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody>${rows||'<tr><td colspan="6" class="text-center text-muted py-3">No OPD patients assigned</td></tr>'}</tbody>
+        </table>
+      </div>
     </div>
-  </div>`;
+
+    <!-- Consult Modal -->
+    <div class="modal fade" id="opdConsultModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <form class="modal-content rounded-4" onsubmit="saveConsult(event)">
+          <div class="modal-header">
+            <h5 class="modal-title">OPD Consultation</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="consult-id">
+            <div id="consult-patient-info" class="alert alert-info p-2 mb-3 small"></div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Diagnosis</label>
+              <textarea id="consult-diag" class="form-control" rows="2" required></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Prescription / Medicines</label>
+              <textarea id="consult-rx" class="form-control" rows="4" placeholder="1. Tab Paracetamol 500mg - 1x3 days&#10;2. Tab Amoxicillin 500mg - 1x5 days"></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Notes / Advice</label>
+              <textarea id="consult-notes" class="form-control" rows="2" placeholder="Rest for 2 days, drink plenty of water..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" onclick="printConsultSlip()"><i class="bi bi-printer me-1"></i>Print Slip</button>
+            <button type="submit" class="btn btn-success"><i class="bi bi-check-circle me-1"></i>Save & Close</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
 }
 
 async function updateOPDStatus(id, status) {
@@ -1068,6 +1095,184 @@ function filterTable(input,tableId){const val=input.value.toLowerCase();document
 function filterStatus(sel,tableId){const val=sel.value;document.querySelectorAll('#'+tableId+' tbody tr').forEach(tr=>tr.style.display=!val||tr.textContent.includes(val)?'':'none');}
 function filterDate(input,tableId){const val=input.value;document.querySelectorAll('#'+tableId+' tbody tr').forEach(tr=>tr.style.display=!val||tr.textContent.includes(val)?'':'none');}
 window.onload=()=>{if(session?.token&&session?.user){currentRole=session.user.role;launchApp();}}
+let _currentConsultOPD = null;
+
+function opdConsultModal(o) {
+  _currentConsultOPD = o;
+  document.getElementById('consult-id').value = o.id;
+  document.getElementById('consult-patient-info').innerHTML =
+    `<b>${o.full_name}</b> | Age: ${o.age||'-'} | Sex: ${o.gender||'-'} | UHID: <b>${o.uhid}</b> | Token: <b>${o.token_no}</b><br>
+     Complaint: ${o.chief_complaint||'-'} | BP: ${o.bp_systolic||'-'}/${o.bp_diastolic||'-'} | Temp: ${o.temperature||'-'} | SpO2: ${o.spo2||'-'}%`;
+  document.getElementById('consult-diag').value = o.diagnosis||'';
+  document.getElementById('consult-rx').value = o.prescription||'';
+  document.getElementById('consult-notes').value = o.notes||'';
+  new bootstrap.Modal(document.getElementById('opdConsultModal')).show();
+}
+
+async function saveConsult(e) {
+  e.preventDefault();
+  const id = document.getElementById('consult-id').value;
+  await apiFetch(`opd/${id}/consult`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      diagnosis: document.getElementById('consult-diag').value,
+      prescription: document.getElementById('consult-rx').value,
+      notes: document.getElementById('consult-notes').value
+    })
+  });
+  bootstrap.Modal.getInstance(document.getElementById('opdConsultModal')).hide();
+  toast('Consultation saved!');
+  renderPage('doc-opd');
+}
+
+function printConsultSlip() {
+  const o = _currentConsultOPD;
+  const diag = document.getElementById('consult-diag').value;
+  const rx   = document.getElementById('consult-rx').value;
+  const notes= document.getElementById('consult-notes').value;
+  const win = window.open('','_blank','width=800,height=900');
+  win.document.write(`<!DOCTYPE html><html><head><title>Prescription</title>
+  <style>
+    body{font-family:Arial,sans-serif;margin:0;padding:20px;font-size:13px}
+    .header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #0d6efd;padding-bottom:10px;margin-bottom:10px}
+    .hospital-name{font-size:22px;font-weight:700;color:#0d6efd}
+    .hospital-name span{color:#198754}
+    .doctor-info{text-align:right;font-size:12px}
+    .patient-box{background:#f0f4ff;border:1px solid #cde;border-radius:8px;padding:10px;margin-bottom:12px}
+    .patient-box table{width:100%}
+    .patient-box td{padding:2px 8px;font-size:12px}
+    .section-title{font-weight:700;color:#0d6efd;border-bottom:1px solid #cde;margin:10px 0 6px;padding-bottom:3px;font-size:13px}
+    .rx-symbol{font-size:28px;font-weight:700;color:#0d6efd;margin-right:8px}
+    pre{font-family:Arial,sans-serif;white-space:pre-wrap;margin:0;font-size:13px}
+    .footer{margin-top:30px;border-top:1px solid #ccc;padding-top:10px;display:flex;justify-content:space-between;font-size:11px;color:#666}
+    .sign-box{text-align:right;margin-top:40px}
+    @media print{body{margin:0}}
+  </style></head><body>
+  <div class="header">
+    <div>
+      <div class="hospital-name">Medi<span>Care</span> HMS</div>
+      <div style="font-size:11px;color:#666">Super Speciality Hospital</div>
+    </div>
+    <div class="doctor-info">
+      <b>Dr. ${o.doctor_name||'Doctor'}</b><br>
+      ${o.speciality||'General Physician'}<br>
+      Date: ${new Date().toLocaleDateString('en-IN')}&nbsp;&nbsp;Time: ${new Date().toLocaleTimeString('en-IN')}
+    </div>
+  </div>
+  <div class="patient-box">
+    <table>
+      <tr>
+        <td><b>Patient:</b> ${o.full_name}</td>
+        <td><b>UHID:</b> ${o.uhid}</td>
+        <td><b>Token:</b> ${o.token_no}</td>
+      </tr>
+      <tr>
+        <td><b>Age/Sex:</b> ${o.age||'-'} yrs / ${o.gender||'-'}</td>
+        <td><b>Mobile:</b> ${o.mobile||'-'}</td>
+        <td><b>Blood:</b> ${o.blood_group||'-'}</td>
+      </tr>
+      <tr>
+        <td><b>BP:</b> ${o.bp_systolic||'-'}/${o.bp_diastolic||'-'} mmHg</td>
+        <td><b>Temp:</b> ${o.temperature||'-'} °F</td>
+        <td><b>SpO2:</b> ${o.spo2||'-'}%&nbsp;&nbsp;<b>Pulse:</b> ${o.pulse_rate||'-'}/min</td>
+      </tr>
+      <tr><td colspan="3"><b>Complaint:</b> ${o.chief_complaint||'-'}</td></tr>
+    </table>
+  </div>
+  <div class="section-title">Diagnosis</div>
+  <p style="margin:0 0 10px">${diag||'-'}</p>
+  <div class="section-title"><span class="rx-symbol">℞</span> Medicines Advised</div>
+  <pre>${rx||'-'}</pre>
+  ${notes?`<div class="section-title">Advice / Notes</div><p style="margin:0">${notes}</p>`:''}
+  <div class="sign-box">
+    <div style="border-top:1px solid #000;display:inline-block;padding-top:4px;min-width:150px;text-align:center">
+      <b>Dr. ${o.doctor_name||'Doctor'}</b><br>
+      <small>${o.speciality||''}</small>
+    </div>
+  </div>
+  <div class="footer">
+    <span>MediCare HMS — Prescription</span>
+    <span>This is a computer generated prescription</span>
+  </div>
+  <script>window.onload=()=>{window.print();}<\/script>
+  </body></html>`);
+  win.document.close();
+}
+
+function printOPDSlip(o) {
+  const win = window.open('','_blank','width=800,height=900');
+  win.document.write(`<!DOCTYPE html><html><head><title>OPD Registration Slip</title>
+  <style>
+    body{font-family:Arial,sans-serif;margin:0;padding:20px;font-size:13px}
+    .header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #0d6efd;padding-bottom:10px;margin-bottom:12px}
+    .hospital-name{font-size:22px;font-weight:700;color:#0d6efd}
+    .hospital-name span{color:#198754}
+    .token-box{background:#0d6efd;color:#fff;border-radius:10px;padding:10px 20px;text-align:center}
+    .token-box .t-label{font-size:11px;opacity:.85}
+    .token-box .t-no{font-size:28px;font-weight:700}
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;background:#f8faff;border:1px solid #dde;border-radius:8px;padding:10px;margin-bottom:10px}
+    .info-grid div{font-size:12px;padding:2px 0}
+    .info-grid b{color:#333}
+    .section-title{font-weight:700;color:#0d6efd;border-bottom:1px solid #cde;margin:10px 0 6px;padding-bottom:3px;font-size:12px;text-transform:uppercase}
+    .vitals-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+    .vital{background:#fff;border:1px solid #dde;border-radius:6px;padding:4px 10px;font-size:12px;text-align:center}
+    .vital b{display:block;font-size:15px;color:#0d6efd}
+    .footer{margin-top:20px;border-top:1px solid #ccc;padding-top:8px;display:flex;justify-content:space-between;font-size:11px;color:#666}
+    @media print{body{margin:0}}
+  </style></head><body>
+  <div class="header">
+    <div>
+      <div class="hospital-name">Medi<span>Care</span> HMS</div>
+      <div style="font-size:11px;color:#555">OPD Registration Slip</div>
+      <div style="font-size:11px;color:#555">Date: ${o.reg_date||new Date().toLocaleDateString('en-IN')} &nbsp; Time: ${o.reg_time||new Date().toLocaleTimeString('en-IN')}</div>
+    </div>
+    <div class="token-box">
+      <div class="t-label">TOKEN NO</div>
+      <div class="t-no">${o.token_no}</div>
+      <div class="t-label">UHID: ${o.uhid}</div>
+    </div>
+  </div>
+  <div class="section-title">Patient Information</div>
+  <div class="info-grid">
+    <div><b>Name:</b> ${o.full_name}</div>
+    <div><b>Age/Sex:</b> ${o.age||'-'} yrs / ${o.gender||'-'}</div>
+    <div><b>Mobile:</b> ${o.mobile||'-'}</div>
+    <div><b>Blood Group:</b> ${o.blood_group||'-'}</div>
+    <div><b>Department:</b> ${o.department||'-'}</div>
+    <div><b>Doctor:</b> ${o.doctor_name||'-'}</div>
+    <div><b>Visit Type:</b> ${o.visit_type||'OPD'}</div>
+    <div><b>Marital Status:</b> ${o.marital_status||'-'}</div>
+    <div><b>Address:</b> ${o.address||'-'}, ${o.city||''}</div>
+    <div><b>Emergency Contact:</b> ${o.emergency_contact_name||'-'} (${o.emergency_contact_phone||'-'})</div>
+  </div>
+  <div class="section-title">Vitals</div>
+  <div class="vitals-row">
+    <div class="vital"><b>${o.bp_systolic||'-'}/${o.bp_diastolic||'-'}</b>BP (mmHg)</div>
+    <div class="vital"><b>${o.temperature||'-'}</b>Temp (°F)</div>
+    <div class="vital"><b>${o.spo2||'-'}%</b>SpO2</div>
+    <div class="vital"><b>${o.pulse_rate||'-'}</b>Pulse/min</div>
+    <div class="vital"><b>${o.weight||'-'} kg</b>Weight</div>
+    <div class="vital"><b>${o.height||'-'} cm</b>Height</div>
+  </div>
+  <div class="section-title">Chief Complaint</div>
+  <p style="margin:0 0 8px">${o.chief_complaint||'-'}</p>
+  <div class="section-title">Payment</div>
+  <div class="info-grid">
+    <div><b>Consultation Fee:</b> ₹${o.consultation_fee||0}</div>
+    <div><b>Registration Fee:</b> ₹${o.registration_fee||0}</div>
+    <div><b>Total Amount:</b> ₹${o.total_amount||0}</div>
+    <div><b>Payment Mode:</b> ${o.payment_mode||'Cash'}</div>
+    <div><b>Amount Paid:</b> ₹${o.amount_paid||0}</div>
+    <div><b>Balance:</b> ₹${o.balance||0}</div>
+  </div>
+  <div class="footer">
+    <span>MediCare HMS — OPD Registration</span>
+    <span>Computer Generated Slip — No Signature Required</span>
+  </div>
+  <script>window.onload=()=>{window.print();}<\/script>
+  </body></html>`);
+  win.document.close();
+}
 </script>
 </body>
 </html>
