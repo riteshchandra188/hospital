@@ -861,6 +861,17 @@ async function recOPDForm() {
           <div class="p-3 rounded-3 bg-light"><div class="text-muted small">Token No.</div><div class="fw-bold fs-5" id="success-token">-</div></div>
         </div>
         <button class="btn btn-primary mt-2" onclick="bootstrap.Modal.getInstance(document.getElementById('opdSuccessModal')).hide();renderPage('rec-opd')">New Registration</button>
+        <div class="modal-footer">
+  <button class="btn btn-primary mt-2" onclick="bootstrap.Modal.getInstance(document.getElementById('opdSuccessModal')).hide();renderPage('rec-opd')">
+    <i class="bi bi-plus-circle me-1"></i>New Registration
+  </button>
+  <button class="btn btn-success mt-2 ms-2" onclick="printOPDSlip(_lastOPDRec)">
+    <i class="bi bi-printer me-1"></i>Print Slip
+  </button>
+  <button class="btn btn-outline-secondary mt-2 ms-2" onclick="bootstrap.Modal.getInstance(document.getElementById('opdSuccessModal')).hide();renderPage('rec-opd-list')">
+    <i class="bi bi-list-ul me-1"></i>View OPD List
+  </button>
+</div>
         <button class="btn btn-outline-secondary mt-2 ms-2" onclick="bootstrap.Modal.getInstance(document.getElementById('opdSuccessModal')).hide();renderPage('rec-opd-list')">View OPD List</button>
       </div>
     </div>
@@ -932,9 +943,11 @@ async function submitOPD(e) {
   emergency_contact_relation: document.getElementById('opd-ecrel').value,
   emergency_contact_phone: document.getElementById('opd-ecphone').value
 })
-    document.getElementById('success-uhid').textContent = data.uhid;
-    document.getElementById('success-token').textContent = data.token_no;
-    new bootstrap.Modal(document.getElementById('opdSuccessModal')).show();
+   document.getElementById('success-uhid').textContent = data.uhid
+ document.getElementById('success-token').textContent = data.token_no
+new bootstrap.Modal(document.getElementById('opdSuccessModal')).show()
+const rec = await apiFetch('opd/' + data.id);
+printOPDSlip(rec);
   } catch(e) { toast(e.message, 'error'); }
 }
 
