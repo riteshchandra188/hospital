@@ -943,8 +943,9 @@ async function submitOPD(e) {
   emergency_contact_relation: document.getElementById('opd-ecrel').value,
   emergency_contact_phone: document.getElementById('opd-ecphone').value
 })
-   document.getElementById('success-uhid').textContent = data.uhid
- document.getElementById('success-token').textContent = data.token_no
+   _lastOPDRec = data
+document.getElementById('success-uhid').textContent = data.uhid
+document.getElementById('success-token').textContent = data.token_no
 new bootstrap.Modal(document.getElementById('opdSuccessModal')).show()
 const rec = await apiFetch('opd/' + data.id);
 printOPDSlip(rec);
