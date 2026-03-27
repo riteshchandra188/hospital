@@ -251,7 +251,10 @@ app.get('/api/opd', auth, async (req, res) => {
 app.get('/api/opd/doctor', auth, async (req, res) => {
   try {
     const [r] = await pool.query(
-      'SELECT * FROM opd_registrations WHERE doctor_id = ? ORDER BY created_at DESC',
+      `SELECT o.*, d.name as doctor_name, d.speciality 
+       FROM opd_registrations o 
+       LEFT JOIN doctors d ON o.doctor_id = d.id 
+       WHERE o.doctor_id = ? ORDER BY o.created_at DESC`,
       [req.user.id]);
     res.json(r);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -262,6 +265,17 @@ app.put('/api/opd/:id/status', auth, async (req, res) => {
   try {
     await pool.query('UPDATE opd_registrations SET status = ? WHERE id = ?',
       [req.body.status, req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+// Save diagnosis, prescription, notes on OPD by doctor
+app.put('/api/opd/:id/consult', auth, async (req, res) => {
+  try {
+    const { diagnosis, prescription, notes } = req.body;
+    await pool.query(
+      'UPDATE opd_registrations SET diagnosis=?, prescription=?, notes=?, status="Consulted" WHERE id=?',
+      [diagnosis||null, prescription||null, notes||null, req.params.id]
+    );
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
