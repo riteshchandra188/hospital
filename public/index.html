@@ -171,6 +171,7 @@ function clearSession(){session=null;currentRole=null;localStorage.removeItem('h
 function authHeaders(){return{'Content-Type':'application/json','Authorization':'Bearer '+session?.token};}
 function toast(msg,type='success'){const el=document.getElementById('toast');el.className='toast align-items-center border-0 text-white bg-'+(type==='success'?'success':type==='error'?'danger':'primary');document.getElementById('toast-msg').textContent=msg;new bootstrap.Toast(el,{delay:3000}).show();}
 let authRole;
+let _lastOPDRec = null;
 function togglePwd(id){const el=document.getElementById(id);el.type=el.type==='password'?'text':'password';}
 function show(id){document.getElementById(id).style.display='';}
 function hide(id){document.getElementById(id).style.display='none';}
