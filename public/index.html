@@ -731,157 +731,166 @@ async function recOPDForm() {
       <p class="text-muted small">All fields marked * are required</p>
     </div>
     <div class="card-body">
-    <form onsubmit="submitOPD(event)">
+      <form onsubmit="submitOPD(event)">
 
-      <div class="p-3 mb-3 rounded-3" style="background:#f0f7ff;border-left:4px solid #0d6efd">
-        <h6 class="fw-bold text-primary mb-3"><i class="bi bi-person-fill me-2"></i>1. Patient Personal Details</h6>
-        <div class="row g-3">
-          <div class="col-md-6"><label class="form-label fw-semibold">Full Name *</label><input id="opd-name" class="form-control" required></div>
-          <div class="col-md-6"><label class="form-label fw-semibold">Father's / Husband's Name</label><input id="opd-fhname" class="form-control"></div>
-          <div class="col-md-3"><label class="form-label fw-semibold">Date of Birth</label><input type="date" id="opd-dob" class="form-control"></div>
-          <div class="col-md-2"><label class="form-label fw-semibold">Age</label><input type="number" id="opd-age" class="form-control" min="0" max="150"></div>
-          <div class="col-md-3"><label class="form-label fw-semibold">Gender</label>
-            <select id="opd-gender" class="form-select"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></div>
-          <div class="col-md-4"><label class="form-label fw-semibold">Blood Group</label>
-            <select id="opd-blood" class="form-select"><option value="">Select</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select></div>
-          <div class="col-md-4"><label class="form-label fw-semibold">Marital Status</label>
-            <select id="opd-marital" class="form-select"><option value="">Select</option><option>Single</option><option>Married</option><option>Divorced</option><option>Widowed</option></select></div>
-          <div class="col-md-4"><label class="form-label fw-semibold">Mobile No. *</label><input id="opd-mobile" class="form-control" required></div>
-          <div class="col-md-4"><label class="form-label fw-semibold">Alternate No.</label><input id="opd-altmobile" class="form-control"></div>
-          <div class="col-md-4"><label class="form-label fw-semibold">Email</label><input type="email" id="opd-email" class="form-control"></div>
-          <div class="col-md-12"><label class="form-label fw-semibold">Address</label><input id="opd-address" class="form-control"></div>
-          <div class="col-md-4"><label class="form-label fw-semibold">City</label><input id="opd-city" class="form-control"></div>
-          <div class="col-md-4"><label class="form-label fw-semibold">State</label><input id="opd-state" class="form-control"></div>
-          <div class="col-md-4"><label class="form-label fw-semibold">Pin Code</label><input id="opd-pin" class="form-control"></div>
-        </div>
-      </div>
-
-      <div class="p-3 mb-3 rounded-3" style="background:#f0fff4;border-left:4px solid #198754">
-        <h6 class="fw-bold text-success mb-3"><i class="bi bi-hospital-fill me-2"></i>2. Consultant / Doctor Details</h6>
-        <div class="row g-3">
-          <div class="col-md-4"><label class="form-label fw-semibold">Department</label><input id="opd-dept" class="form-control"></div>
-          <div class="col-md-4"><label class="form-label fw-semibold">Consultant Doctor *</label>
-            <select id="opd-doctor" class="form-select" required>
-              <option value="">Select Doctor</option>
-              ${docs.map(d => `<option value="${d.id}">Dr. ${d.name} (${d.speciality || 'General'})</option>`).join('')}
-            </select></div>
-          <div class="col-md-4"><label class="form-label fw-semibold">Visit Type</label>
-            <select id="opd-visit" class="form-select"><option>OPD</option><option>Emergency</option><option>Follow-up</option></select></div>
-        </div>
-      </div>
-
-      <div class="p-3 mb-3 rounded-3" style="background:#fff8f0;border-left:4px solid #fd7e14">
-        <h6 class="fw-bold text-warning mb-3"><i class="bi bi-credit-card-fill me-2"></i>3. Consultation Fees & Payment</h6>
-        <div class="row g-3">
-          <div class="col-md-3"><label class="form-label fw-semibold">Consultation Fee (₹)</label><input type="number" id="opd-cfee" class="form-control" value="0" oninput="calcTotal()"></div>
-          <div class="col-md-3"><label class="form-label fw-semibold">Registration Fee (₹)</label><input type="number" id="opd-rfee" class="form-control" value="0" oninput="calcTotal()"></div>
-          <div class="col-md-3"><label class="form-label fw-semibold">Total Amount (₹)</label><input type="number" id="opd-total" class="form-control bg-light" readonly></div>
-          <div class="col-md-3"><label class="form-label fw-semibold">Payment Mode</label>
-            <select id="opd-paymode" class="form-select"><option>Cash</option><option>UPI/Card</option><option>Insurance</option><option>Corporate</option><option>Free/Scheme</option></select></div>
-          <div class="col-md-3"><label class="form-label fw-semibold">Amount Paid (₹)</label><input type="number" id="opd-paid" class="form-control" value="0" oninput="calcBalance()"></div>
-          <div class="col-md-3"><label class="form-label fw-semibold">Balance (₹)</label><input type="number" id="opd-balance" class="form-control bg-light" readonly></div>
-        </div>
-      </div>
-
-      <div class="p-3 mb-3 rounded-3" style="background:#fdf0ff;border-left:4px solid #6f42c1">
-        <h6 class="fw-bold mb-3" style="color:#6f42c1"><i class="bi bi-heart-pulse-fill me-2"></i>4. Patient Vitals</h6>
-        <div class="row g-3">
-          <div class="col-md-2"><label class="form-label fw-semibold">Height (cm)</label><input type="number" id="opd-height" class="form-control"></div>
-          <div class="col-md-2"><label class="form-label fw-semibold">Weight (kg)</label><input type="number" id="opd-weight" class="form-control"></div>
-          <div class="col-md-2"><label class="form-label fw-semibold">Temp (°C)</label><input type="number" id="opd-temp" class="form-control" step="0.1"></div>
-          <div class="col-md-2"><label class="form-label fw-semibold">Pulse (bpm)</label><input type="number" id="opd-pulse" class="form-control"></div>
-          <div class="col-md-2"><label class="form-label fw-semibold">BP Systolic</label><input type="number" id="opd-bps" class="form-control"></div>
-          <div class="col-md-2"><label class="form-label fw-semibold">BP Diastolic</label><input type="number" id="opd-bpd" class="form-control"></div>
-          <div class="col-md-2"><label class="form-label fw-semibold">SpO2 (%)</label><input type="number" id="opd-spo2" class="form-control" step="0.1"></div>
-          <div class="col-md-2"><label class="form-label fw-semibold">Resp. Rate</label><input type="number" id="opd-rr" class="form-control"></div>
-        </div>
-      </div>
-
-      <div class="p-3 mb-3 rounded-3" style="background:#fff0f3;border-left:4px solid #dc3545">
-        <h6 class="fw-bold text-danger mb-3"><i class="bi bi-stethoscope me-2"></i>5. Chief Complaint</h6>
-        <div class="row g-3">
-          <div class="col-md-6"><label class="form-label fw-semibold">Chief Complaint *</label><textarea id="opd-complaint" class="form-control" rows="2" required></textarea></div>
-          <div class="col-md-6"><label class="form-label fw-semibold">Symptoms</label><textarea id="opd-symptoms" class="form-control" rows="2"></textarea></div>
-        </div>
-      </div>
-
-      <div class="p-3 mb-3 rounded-3" style="background:#f8f9fa;border-left:4px solid #6c757d">
-        <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-journal-medical me-2"></i>6. Previous Medical History</h6>
-        <div class="row g-3">
-          <div class="col-12">
-            <div class="d-flex flex-wrap gap-4">
-              <div class="form-check"><input class="form-check-input" type="checkbox" id="opd-diabetes"><label class="form-check-label" for="opd-diabetes">Diabetes</label></div>
-              <div class="form-check"><input class="form-check-input" type="checkbox" id="opd-htn"><label class="form-check-label" for="opd-htn">Hypertension</label></div>
-              <div class="form-check"><input class="form-check-input" type="checkbox" id="opd-heart"><label class="form-check-label" for="opd-heart">Heart Disease</label></div>
-              <div class="form-check"><input class="form-check-input" type="checkbox" id="opd-asthma"><label class="form-check-label" for="opd-asthma">Asthma</label></div>
-              <div class="form-check"><input class="form-check-input" type="checkbox" id="opd-thyroid"><label class="form-check-label" for="opd-thyroid">Thyroid</label></div>
-            </div>
+        <!-- 1. Patient Personal Details -->
+        <div class="p-3 mb-3 rounded-3" style="background:#f0f7ff;border-left:4px solid #0d6efd">
+          <h6 class="fw-bold text-primary mb-3"><i class="bi bi-person-fill me-2"></i>1. Patient Personal Details</h6>
+          <div class="row g-3">
+            <div class="col-md-6"><label class="form-label fw-semibold">Full Name *</label><input id="opd-name" class="form-control" required></div>
+            <div class="col-md-6"><label class="form-label fw-semibold">Father's / Husband's Name</label><input id="opd-fhname" class="form-control"></div>
+            <div class="col-md-3"><label class="form-label fw-semibold">Date of Birth</label><input type="date" id="opd-dob" class="form-control"></div>
+            <div class="col-md-2"><label class="form-label fw-semibold">Age</label><input type="number" id="opd-age" class="form-control" min="0" max="150"></div>
+            <div class="col-md-3"><label class="form-label fw-semibold">Gender</label>
+              <select id="opd-gender" class="form-select"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+            <div class="col-md-4"><label class="form-label fw-semibold">Blood Group</label>
+              <select id="opd-blood" class="form-select"><option value="">Select</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select></div>
+            <div class="col-md-4"><label class="form-label fw-semibold">Marital Status</label>
+              <select id="opd-marital" class="form-select"><option value="">Select</option><option>Single</option><option>Married</option><option>Divorced</option><option>Widowed</option></select></div>
+            <div class="col-md-4"><label class="form-label fw-semibold">Mobile No. *</label><input id="opd-mobile" class="form-control" required></div>
+            <div class="col-md-4"><label class="form-label fw-semibold">Alternate No.</label><input id="opd-altmobile" class="form-control"></div>
+            <div class="col-md-4"><label class="form-label fw-semibold">Email</label><input type="email" id="opd-email" class="form-control"></div>
+            <div class="col-md-12"><label class="form-label fw-semibold">Address</label><input id="opd-address" class="form-control"></div>
+            <div class="col-md-4"><label class="form-label fw-semibold">City</label><input id="opd-city" class="form-control"></div>
+            <div class="col-md-4"><label class="form-label fw-semibold">State</label><input id="opd-state" class="form-control"></div>
+            <div class="col-md-4"><label class="form-label fw-semibold">Pin Code</label><input id="opd-pin" class="form-control"></div>
           </div>
-          <div class="col-md-6"><label class="form-label fw-semibold">Previous Surgeries</label><input id="opd-surgeries" class="form-control"></div>
-          <div class="col-md-6"><label class="form-label fw-semibold">Past Hospitalization</label><input id="opd-hosp" class="form-control"></div>
         </div>
-      </div>
 
-      <div class="p-3 mb-3 rounded-3" style="background:#f0fff4;border-left:4px solid #20c997">
-        <h6 class="fw-bold mb-3" style="color:#20c997"><i class="bi bi-capsule me-2"></i>7. Medication & Allergies</h6>
-        <div class="row g-3">
-          <div class="col-md-4"><label class="form-label fw-semibold">Current Medications</label><input id="opd-meds" class="form-control"></div>
-          <div class="col-md-4"><label class="form-label fw-semibold">Drug Allergies</label><input id="opd-drugallergy" class="form-control"></div>
-          <div class="col-md-4"><label class="form-label fw-semibold">Food Allergies</label><input id="opd-foodallergy" class="form-control"></div>
+        <!-- 2. Consultant / Doctor Details -->
+        <div class="p-3 mb-3 rounded-3" style="background:#f0fff4;border-left:4px solid #198754">
+          <h6 class="fw-bold text-success mb-3"><i class="bi bi-hospital-fill me-2"></i>2. Consultant / Doctor Details</h6>
+          <div class="row g-3">
+            <div class="col-md-4"><label class="form-label fw-semibold">Department</label><input id="opd-dept" class="form-control"></div>
+            <div class="col-md-4"><label class="form-label fw-semibold">Consultant Doctor *</label>
+              <select id="opd-doctor" class="form-select" required>
+                <option value="">Select Doctor</option>
+                ${docs.map(d => `<option value="${d.id}">Dr. ${d.name} (${d.speciality || 'General'})</option>`).join('')}
+              </select></div>
+            <div class="col-md-4"><label class="form-label fw-semibold">Visit Type</label>
+              <select id="opd-visit" class="form-select"><option>OPD</option><option>Emergency</option><option>Follow-up</option></select></div>
+          </div>
         </div>
-      </div>
 
-      <div class="p-3 mb-3 rounded-3" style="background:#fff8f0;border-left:4px solid #ffc107">
-        <h6 class="fw-bold text-warning mb-3"><i class="bi bi-info-circle-fill me-2"></i>8. Additional Information</h6>
-        <div class="row g-3">
-          <div class="col-md-3"><label class="form-label fw-semibold">Occupation</label><input id="opd-occ" class="form-control"></div>
-          <div class="col-md-3"><label class="form-label fw-semibold">Emergency Contact Name</label><input id="opd-ecname" class="form-control"></div>
-          <div class="col-md-3"><label class="form-label fw-semibold">Relationship</label><input id="opd-ecrel" class="form-control"></div>
-          <div class="col-md-3"><label class="form-label fw-semibold">Emergency Phone</label><input id="opd-ecphone" class="form-control"></div>
+        <!-- 3. Consultation Fees & Payment -->
+        <div class="p-3 mb-3 rounded-3" style="background:#fff8f0;border-left:4px solid #fd7e14">
+          <h6 class="fw-bold text-warning mb-3"><i class="bi bi-credit-card-fill me-2"></i>3. Consultation Fees & Payment</h6>
+          <div class="row g-3">
+            <div class="col-md-3"><label class="form-label fw-semibold">Consultation Fee (₹)</label><input type="number" id="opd-cfee" class="form-control" value="0" oninput="calcTotal()"></div>
+            <div class="col-md-3"><label class="form-label fw-semibold">Registration Fee (₹)</label><input type="number" id="opd-rfee" class="form-control" value="0" oninput="calcTotal()"></div>
+            <div class="col-md-3"><label class="form-label fw-semibold">Total Amount (₹)</label><input type="number" id="opd-total" class="form-control bg-light" readonly></div>
+            <div class="col-md-3"><label class="form-label fw-semibold">Payment Mode</label>
+              <select id="opd-paymode" class="form-select"><option>Cash</option><option>UPI/Card</option><option>Insurance</option><option>Corporate</option><option>Free/Scheme</option></select></div>
+            <div class="col-md-3"><label class="form-label fw-semibold">Amount Paid (₹)</label><input type="number" id="opd-paid" class="form-control" value="0" oninput="calcBalance()"></div>
+            <div class="col-md-3"><label class="form-label fw-semibold">Balance (₹)</label><input type="number" id="opd-balance" class="form-control bg-light" readonly></div>
+          </div>
         </div>
-      </div>
 
-      <div class="d-flex gap-3 mt-3">
-        <button type="submit" class="btn btn-primary btn-lg px-5"><i class="bi bi-check-circle me-2"></i>Register Patient</button>
-        <button type="reset" class="btn btn-outline-secondary btn-lg px-4"><i class="bi bi-arrow-counterclockwise me-2"></i>Reset</button>
-      </div>
+        <!-- 4. Patient Vitals -->
+        <div class="p-3 mb-3 rounded-3" style="background:#fdf0ff;border-left:4px solid #6f42c1">
+          <h6 class="fw-bold mb-3" style="color:#6f42c1"><i class="bi bi-heart-pulse-fill me-2"></i>4. Patient Vitals</h6>
+          <div class="row g-3">
+            <div class="col-md-2"><label class="form-label fw-semibold">Height (cm)</label><input type="number" id="opd-height" class="form-control"></div>
+            <div class="col-md-2"><label class="form-label fw-semibold">Weight (kg)</label><input type="number" id="opd-weight" class="form-control"></div>
+            <div class="col-md-2"><label class="form-label fw-semibold">Temp (°C)</label><input type="number" id="opd-temp" class="form-control" step="0.1"></div>
+            <div class="col-md-2"><label class="form-label fw-semibold">Pulse (bpm)</label><input type="number" id="opd-pulse" class="form-control"></div>
+            <div class="col-md-2"><label class="form-label fw-semibold">BP Systolic</label><input type="number" id="opd-bps" class="form-control"></div>
+            <div class="col-md-2"><label class="form-label fw-semibold">BP Diastolic</label><input type="number" id="opd-bpd" class="form-control"></div>
+            <div class="col-md-2"><label class="form-label fw-semibold">SpO2 (%)</label><input type="number" id="opd-spo2" class="form-control" step="0.1"></div>
+            <div class="col-md-2"><label class="form-label fw-semibold">Resp. Rate</label><input type="number" id="opd-rr" class="form-control"></div>
+          </div>
+        </div>
 
-    </form>
+        <!-- 5. Chief Complaint -->
+        <div class="p-3 mb-3 rounded-3" style="background:#fff0f3;border-left:4px solid #dc3545">
+          <h6 class="fw-bold text-danger mb-3"><i class="bi bi-stethoscope me-2"></i>5. Chief Complaint</h6>
+          <div class="row g-3">
+            <div class="col-md-6"><label class="form-label fw-semibold">Chief Complaint *</label><textarea id="opd-complaint" class="form-control" rows="2" required></textarea></div>
+            <div class="col-md-6"><label class="form-label fw-semibold">Symptoms</label><textarea id="opd-symptoms" class="form-control" rows="2"></textarea></div>
+          </div>
+        </div>
+
+        <!-- 6. Previous Medical History -->
+        <div class="p-3 mb-3 rounded-3" style="background:#f8f9fa;border-left:4px solid #6c757d">
+          <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-journal-medical me-2"></i>6. Previous Medical History</h6>
+          <div class="row g-3">
+            <div class="col-12">
+              <div class="d-flex flex-wrap gap-4">
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="opd-diabetes"><label class="form-check-label" for="opd-diabetes">Diabetes</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="opd-htn"><label class="form-check-label" for="opd-htn">Hypertension</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="opd-heart"><label class="form-check-label" for="opd-heart">Heart Disease</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="opd-asthma"><label class="form-check-label" for="opd-asthma">Asthma</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="opd-thyroid"><label class="form-check-label" for="opd-thyroid">Thyroid</label></div>
+              </div>
+            </div>
+            <div class="col-md-6"><label class="form-label fw-semibold">Previous Surgeries</label><input id="opd-surgeries" class="form-control"></div>
+            <div class="col-md-6"><label class="form-label fw-semibold">Past Hospitalization</label><input id="opd-hosp" class="form-control"></div>
+          </div>
+        </div>
+
+        <!-- 7. Medication & Allergies -->
+        <div class="p-3 mb-3 rounded-3" style="background:#f0fff4;border-left:4px solid #20c997">
+          <h6 class="fw-bold mb-3" style="color:#20c997"><i class="bi bi-capsule me-2"></i>7. Medication & Allergies</h6>
+          <div class="row g-3">
+            <div class="col-md-4"><label class="form-label fw-semibold">Current Medications</label><input id="opd-meds" class="form-control"></div>
+            <div class="col-md-4"><label class="form-label fw-semibold">Drug Allergies</label><input id="opd-drugallergy" class="form-control"></div>
+            <div class="col-md-4"><label class="form-label fw-semibold">Food Allergies</label><input id="opd-foodallergy" class="form-control"></div>
+          </div>
+        </div>
+
+        <!-- 8. Additional Information -->
+        <div class="p-3 mb-3 rounded-3" style="background:#fff8f0;border-left:4px solid #ffc107">
+          <h6 class="fw-bold text-warning mb-3"><i class="bi bi-info-circle-fill me-2"></i>8. Additional Information</h6>
+          <div class="row g-3">
+            <div class="col-md-3"><label class="form-label fw-semibold">Occupation</label><input id="opd-occ" class="form-control"></div>
+            <div class="col-md-3"><label class="form-label fw-semibold">Emergency Contact Name</label><input id="opd-ecname" class="form-control"></div>
+            <div class="col-md-3"><label class="form-label fw-semibold">Relationship</label><input id="opd-ecrel" class="form-control"></div>
+            <div class="col-md-3"><label class="form-label fw-semibold">Emergency Phone</label><input id="opd-ecphone" class="form-control"></div>
+          </div>
+        </div>
+
+        <div class="d-flex gap-3 mt-3">
+          <button type="submit" class="btn btn-primary btn-lg px-5"><i class="bi bi-check-circle me-2"></i>Register Patient</button>
+          <button type="reset" class="btn btn-outline-secondary btn-lg px-4"><i class="bi bi-arrow-counterclockwise me-2"></i>Reset</button>
+        </div>
+
+      </form>
     </div>
   </div>
 
- <div class="modal fade" id="opdSuccessModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content rounded-4 text-center p-4">
-      <div class="mb-3">
-        <i class="bi bi-check-circle-fill text-success" style="font-size:4rem"></i>
-      </div>
-      <h4 class="fw-bold">Registration Successful!</h4>
-      <p class="text-muted">Patient has been registered and forwarded to the doctor.</p>
-      <div class="d-flex justify-content-center gap-3 mb-3">
-        <div class="p-3 rounded-3 bg-light">
-          <div class="text-muted small">UHID</div>
-          <div class="fw-bold fs-5" id="success-uhid">-</div>
+  <!-- Success Modal -->
+  <div class="modal fade" id="opdSuccessModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-4 text-center p-4">
+        <div class="mb-3">
+          <i class="bi bi-check-circle-fill text-success" style="font-size:4rem"></i>
         </div>
-        <div class="p-3 rounded-3 bg-light">
-          <div class="text-muted small">Token No.</div>
-          <div class="fw-bold fs-5" id="success-token">-</div>
+        <h4 class="fw-bold">Registration Successful!</h4>
+        <p class="text-muted">Patient has been registered and forwarded to the doctor.</p>
+        <div class="d-flex justify-content-center gap-3 mb-3">
+          <div class="p-3 rounded-3 bg-light">
+            <div class="text-muted small">UHID</div>
+            <div class="fw-bold fs-5" id="success-uhid">-</div>
+          </div>
+          <div class="p-3 rounded-3 bg-light">
+            <div class="text-muted small">Token No.</div>
+            <div class="fw-bold fs-5" id="success-token">-</div>
+          </div>
         </div>
-      </div>
-      <div class="d-flex justify-content-center gap-2 flex-wrap">
-        <button class="btn btn-primary" onclick="bootstrap.Modal.getInstance(document.getElementById('opdSuccessModal')).hide();renderPage('rec-opd')">
-          <i class="bi bi-plus-circle me-1"></i>New Registration
-        </button>
-        <button class="btn btn-success" onclick="printOPDSlip(_lastOPDRec)">
-          <i class="bi bi-printer me-1"></i>Print Slip
-        </button>
-        <button class="btn btn-outline-secondary" onclick="bootstrap.Modal.getInstance(document.getElementById('opdSuccessModal')).hide();renderPage('rec-opd-list')">
-          <i class="bi bi-list-ul me-1"></i>View OPD List
-        </button>
+        <div class="d-flex justify-content-center gap-2 flex-wrap">
+          <button class="btn btn-primary" onclick="bootstrap.Modal.getInstance(document.getElementById('opdSuccessModal')).hide();renderPage('rec-opd')">
+            <i class="bi bi-plus-circle me-1"></i>New Registration
+          </button>
+          <button class="btn btn-success" onclick="printOPDSlip(_lastOPDRec)">
+            <i class="bi bi-printer me-1"></i>Print Slip
+          </button>
+          <button class="btn btn-outline-secondary" onclick="bootstrap.Modal.getInstance(document.getElementById('opdSuccessModal')).hide();renderPage('rec-opd-list')">
+            <i class="bi bi-list-ul me-1"></i>View OPD List
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-</div>';
+  </div>`;
 }
 
 function calcTotal() {
