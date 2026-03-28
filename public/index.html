@@ -1040,10 +1040,10 @@ async function docOPD() {
       <td>${o.chief_complaint||'-'}</td>
       <td><span class="badge ${o.status==='Consulted'?'bg-success':'bg-warning text-dark'}">${o.status||'Pending'}</span></td>
       <td>
-        <button class="btn btn-sm btn-primary me-1" onclick="opdConsultModal(${JSON.stringify(o).replace(/"/g,'&quot;')})">
+        <button class="btn btn-sm btn-primary me-1" onclick="opdConsultModal(${o.id})">
           <i class="bi bi-pencil-square"></i> Consult
         </button>
-        <button class="btn btn-sm btn-outline-secondary" onclick="printOPDSlip(${JSON.stringify(o).replace(/"/g,'&quot;')})">
+        <button class="btn btn-sm btn-outline-secondary" onclick="printOPDSlipById(${o.id})">
           <i class="bi bi-printer"></i> Slip
         </button>
       </td>
@@ -1127,7 +1127,8 @@ function filterDate(input,tableId){const val=input.value;document.querySelectorA
 window.onload=()=>{if(session?.token&&session?.user){currentRole=session.user.role;launchApp();}}
 let _currentConsultOPD = null;
 
-function opdConsultModal(o) {
+async function opdConsultModal(id) {
+  const o = await apiFetch('opd/' + id);
   _currentConsultOPD = o;
   document.getElementById('consult-id').value = o.id;
   document.getElementById('consult-patient-info').innerHTML =
@@ -1138,7 +1139,10 @@ function opdConsultModal(o) {
   document.getElementById('consult-notes').value = o.notes||'';
   new bootstrap.Modal(document.getElementById('opdConsultModal')).show();
 }
-
+async function printOPDSlipById(id) {
+  const o = await apiFetch('opd/' + id);
+  printOPDSlip(o);
+}
 async function saveConsult(e) {
   e.preventDefault();
   const id = document.getElementById('consult-id').value;
