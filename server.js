@@ -197,19 +197,22 @@ app.post('/api/opd', auth, async (req, res) => {
     const uhid = 'UHID' + Date.now().toString().slice(-8);
     const token_no = 'T' + Math.floor(Math.random() * 9000 + 1000);
     const {
-      full_name, father_husband_name, dob, age, gender, blood_group, marital_status,
-      mobile, alternate_mobile, email, address, city, state, pin_code,
-      department, doctor_id, visit_type,
-      consultation_fee, registration_fee, total_amount, payment_mode, amount_paid, balance,
-      height, weight, temperature, pulse_rate, bp_systolic, bp_diastolic, spo2, respiratory_rate,
-      chief_complaint, symptoms,
-      diabetes, hypertension, heart_disease, asthma, thyroid, previous_surgeries, past_hospitalization,
-      current_medications, drug_allergies, food_allergies,
-      occupation, emergency_contact_name, emergency_contact_relation, emergency_contact_phone
+      fullname, fatherhusbandname, dob, age, gender, bloodgroup, maritalstatus,
+      mobile, alternatemobile, email, address, city, state, pincode,
+      department, doctorid, visittype,
+      consultationfee, registrationfee, totalamount, paymentmode, amountpaid, balance,
+      height, weight, temperature, pulserate, bpsystolic, bpdiastolic, spo2, respiratoryrate,
+      chiefcomplaint, symptoms,
+      diabetes, hypertension, heart_disease, asthma, thyroid,
+      previous_surgeries, past_hospitalization, current_medications,
+      drug_allergies, food_allergies, occupation,
+      emergencycontactname, emergencycontactrelation, emergencycontactphone
     } = req.body;
+
     const reg_date = new Date().toISOString().split('T')[0];
     const reg_time = new Date().toTimeString().split(' ')[0];
-    await pool.query(`INSERT INTO opd_registrations (
+
+    const [r] = await pool.query(`INSERT INTO opd_registrations (
       uhid,reg_date,reg_time,full_name,father_husband_name,dob,age,gender,blood_group,marital_status,
       mobile,alternate_mobile,email,address,city,state,pin_code,
       department,doctor_id,visit_type,token_no,
@@ -219,34 +222,22 @@ app.post('/api/opd', auth, async (req, res) => {
       previous_surgeries,past_hospitalization,current_medications,drug_allergies,food_allergies,
       occupation,emergency_contact_name,emergency_contact_relation,emergency_contact_phone,created_by
     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    [uhid,reg_date,reg_time,full_name,father_husband_name||null,dob||null,age||null,
-     gender||null,blood_group||null,marital_status||null,mobile||null,alternate_mobile||null,
-     email||null,address||null,city||null,state||null,pin_code||null,
-     department||null,doctor_id||null,visit_type||'OPD',token_no,
-     consultation_fee||0,registration_fee||0,total_amount||0,payment_mode||'Cash',amount_paid||0,balance||0,
-     height||null,weight||null,temperature||null,pulse_rate||null,bp_systolic||null,bp_diastolic||null,
-     spo2||null,respiratory_rate||null,chief_complaint||null,symptoms||null,
-     diabetes?1:0,hypertension?1:0,heart_disease?1:0,asthma?1:0,thyroid?1:0,
-     previous_surgeries||null,past_hospitalization||null,current_medications||null,
-     drug_allergies||null,food_allergies||null,occupation||null,
-     emergency_contact_name||null,emergency_contact_relation||null,emergency_contact_phone||null,
+    [uhid, reg_date, reg_time, fullname, fatherhusbandname||null, dob||null, age||null,
+     gender||null, bloodgroup||null, maritalstatus||null, mobile||null, alternatemobile||null,
+     email||null, address||null, city||null, state||null, pincode||null,
+     department||null, doctorid||null, visittype||'OPD', token_no,
+     consultationfee||0, registrationfee||0, totalamount||0, paymentmode||'Cash', amountpaid||0, balance||0,
+     height||null, weight||null, temperature||null, pulserate||null, bpsystolic||null, bpdiastolic||null,
+     spo2||null, respiratoryrate||null, chiefcomplaint||null, symptoms||null,
+     diabetes?1:0, hypertension?1:0, heart_disease?1:0, asthma?1:0, thyroid?1:0,
+     previous_surgeries||null, past_hospitalization||null, current_medications||null,
+     drug_allergies||null, food_allergies||null, occupation||null,
+     emergencycontactname||null, emergencycontactrelation||null, emergencycontactphone||null,
      req.user.id]);
-     res.json({ ok: true, uhid, token_no, id: r.insertId });
+
+    res.json({ ok: true, uhid, token_no, id: r.insertId });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-
-// Get all OPD (Admin)
-app.get('/api/opd', auth, async (req, res) => {
-  try {
-    const [r] = await pool.query(`
-      SELECT o.*, d.name as doctor_name 
-      FROM opd_registrations o 
-      LEFT JOIN doctors d ON o.doctor_id = d.id 
-      ORDER BY o.created_at DESC`);
-    res.json(r);
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
 // Get OPD by doctor
 app.get('/api/opd/doctor', auth, async (req, res) => {
   try {
