@@ -900,61 +900,62 @@ function calcBalance() {
 async function submitOPD(e) {
   e.preventDefault();
   try {
-    const data = await apiFetch('opd', { method: 'POST', body: JSON.stringify({
-  full_name: document.getElementById('opd-name').value,
-  father_husband_name: document.getElementById('opd-fhname').value,
-  dob: document.getElementById('opd-dob').value,
-  age: document.getElementById('opd-age').value,
-  gender: document.getElementById('opd-gender').value,
-  blood_group: document.getElementById('opd-blood').value,
-  marital_status: document.getElementById('opd-marital').value,
-  mobile: document.getElementById('opd-mobile').value,
-  alternate_mobile: document.getElementById('opd-altmobile').value,
-  email: document.getElementById('opd-email').value,
-  address: document.getElementById('opd-address').value,
-  city: document.getElementById('opd-city').value,
-  state: document.getElementById('opd-state').value,
-  pin_code: document.getElementById('opd-pin').value,
-  department: document.getElementById('opd-dept').value,
-  doctor_id: document.getElementById('opd-doctor').value,
-  visit_type: document.getElementById('opd-visit').value,
-  consultation_fee: document.getElementById('opd-cfee').value,
-  registration_fee: document.getElementById('opd-rfee').value,
-  total_amount: document.getElementById('opd-total').value,
-  payment_mode: document.getElementById('opd-paymode').value,
-  amount_paid: document.getElementById('opd-paid').value,
-  balance: document.getElementById('opd-balance').value,
-  height: document.getElementById('opd-height').value,
-  weight: document.getElementById('opd-weight').value,
-  temperature: document.getElementById('opd-temp').value,
-  pulse_rate: document.getElementById('opd-pulse').value,
-  bp_systolic: document.getElementById('opd-bps').value,
-  bp_diastolic: document.getElementById('opd-bpd').value,
-  spo2: document.getElementById('opd-spo2').value,
-  respiratory_rate: document.getElementById('opd-rr').value,
-  chief_complaint: document.getElementById('opd-complaint').value,
-  symptoms: document.getElementById('opd-symptoms').value,
-  diabetes: document.getElementById('opd-diabetes').checked,
-  hypertension: document.getElementById('opd-htn').checked,
-  heart_disease: document.getElementById('opd-heart').checked,
-  asthma: document.getElementById('opd-asthma').checked,
-  thyroid: document.getElementById('opd-thyroid').checked,
-  previous_surgeries: document.getElementById('opd-surgeries').value,
-  past_hospitalization: document.getElementById('opd-hosp').value,
-  current_medications: document.getElementById('opd-meds').value,
-  drug_allergies: document.getElementById('opd-drugallergy').value,
-  food_allergies: document.getElementById('opd-foodallergy').value,
-  occupation: document.getElementById('opd-occ').value,
-  emergency_contact_name: document.getElementById('opd-ecname').value,
-  emergency_contact_relation: document.getElementById('opd-ecrel').value,
-  emergency_contact_phone: document.getElementById('opd-ecphone').value
-})
-   _lastOPDRec = data
-document.getElementById('success-uhid').textContent = data.uhid
-document.getElementById('success-token').textContent = data.token_no
-new bootstrap.Modal(document.getElementById('opdSuccessModal')).show()
-const rec = await apiFetch('opd/' + data.id);
-printOPDSlip(rec);
+    const data = await apiFetch('opd', {
+      method: 'POST',
+      body: JSON.stringify({
+        fullname: document.getElementById('opd-name').value,
+        fatherhusbandname: document.getElementById('opd-fhname').value,
+        dob: document.getElementById('opd-dob').value,
+        age: document.getElementById('opd-age').value,
+        gender: document.getElementById('opd-gender').value,
+        bloodgroup: document.getElementById('opd-blood').value,
+        maritalstatus: document.getElementById('opd-marital').value,
+        mobile: document.getElementById('opd-mobile').value,
+        alternatemobile: document.getElementById('opd-altmobile').value,
+        email: document.getElementById('opd-email').value,
+        address: document.getElementById('opd-address').value,
+        city: document.getElementById('opd-city').value,
+        state: document.getElementById('opd-state').value,
+        pincode: document.getElementById('opd-pin').value,
+        department: document.getElementById('opd-dept').value,
+        doctorid: document.getElementById('opd-doctor').value,
+        visittype: document.getElementById('opd-visit').value,
+        consultationfee: document.getElementById('opd-cfee').value,
+        registrationfee: document.getElementById('opd-rfee').value,
+        totalamount: document.getElementById('opd-total').value,
+        paymentmode: document.getElementById('opd-paymode').value,
+        amountpaid: document.getElementById('opd-paid').value,
+        balance: document.getElementById('opd-balance').value,
+        height: document.getElementById('opd-height').value,
+        weight: document.getElementById('opd-weight').value,
+        temperature: document.getElementById('opd-temp').value,
+        pulserate: document.getElementById('opd-pulse').value,
+        bpsystolic: document.getElementById('opd-bps').value,
+        bpdiastolic: document.getElementById('opd-bpd').value,
+        spo2: document.getElementById('opd-spo2').value,
+        respiratoryrate: document.getElementById('opd-rr').value,
+        chiefcomplaint: document.getElementById('opd-complaint').value,
+        symptoms: document.getElementById('opd-symptoms').value,
+        diabetes: document.getElementById('opd-diabetes').checked,
+        hypertension: document.getElementById('opd-htn').checked,
+        heartdisease: document.getElementById('opd-heart').checked,
+        asthma: document.getElementById('opd-asthma').checked,
+        thyroid: document.getElementById('opd-thyroid').checked,
+        previoussurgeries: document.getElementById('opd-surgeries').value,
+        pasthospitalization: document.getElementById('opd-hosp').value,
+        currentmedications: document.getElementById('opd-meds').value,
+        drugallergies: document.getElementById('opd-drugallergy').value,
+        foodallergies: document.getElementById('opd-foodallergy').value,
+        occupation: document.getElementById('opd-occ').value,
+        emergencycontactname: document.getElementById('opd-ecname').value,
+        emergencycontactrelation: document.getElementById('opd-ecrel').value,
+        emergencycontactphone: document.getElementById('opd-ecphone').value
+      })
+    });
+    _lastOPDRec = data;
+    document.getElementById('success-uhid').textContent = data.uhid;
+    document.getElementById('success-token').textContent = data.token_no;
+    new bootstrap.Modal(document.getElementById('opdSuccessModal')).show();
   } catch(e) { toast(e.message, 'error'); }
 }
 
