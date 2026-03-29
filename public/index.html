@@ -1128,16 +1128,18 @@ function filterDate(input,tableId){const val=input.value;document.querySelectorA
 window.onload=()=>{if(session?.token&&session?.user){currentRole=session.user.role;launchApp();}}
 let _currentConsultOPD = null;
 
-async function opdConsultModal(id) {
-  const o = await apiFetch('opd/' + id);
-  _currentConsultOPD = o;
+function opdConsultModal(o) {
+  if (typeof o === 'string') {
+    o = JSON.parse(o.replace(/&quot;/g, '"'));
+  }
+  currentConsultOPD = o;
   document.getElementById('consult-id').value = o.id;
   document.getElementById('consult-patient-info').innerHTML =
-    `<b>${o.full_name}</b> | Age: ${o.age||'-'} | Sex: ${o.gender||'-'} | UHID: <b>${o.uhid}</b> | Token: <b>${o.token_no}</b><br>
-     Complaint: ${o.chief_complaint||'-'} | BP: ${o.bp_systolic||'-'}/${o.bp_diastolic||'-'} | Temp: ${o.temperature||'-'} | SpO2: ${o.spo2||'-'}%`;
-  document.getElementById('consult-diag').value = o.diagnosis||'';
-  document.getElementById('consult-rx').value = o.prescription||'';
-  document.getElementById('consult-notes').value = o.notes||'';
+    `<b>${o.full_name||o.fullname}</b> &nbsp; Age: ${o.age||'-'} &nbsp; Sex: ${o.gender||'-'} &nbsp; UHID: <b>${o.uhid}</b> &nbsp; Token: <b>${o.token_no||o.tokenno}</b><br>
+    Complaint: ${o.chief_complaint||o.chiefcomplaint||'-'} &nbsp; BP: ${o.bp_systolic||o.bpsystolic||'-'}/${o.bp_diastolic||o.bpdiastolic||'-'} &nbsp; Temp: ${o.temperature||'-'} &nbsp; SpO2: ${o.spo2||'-'}`;
+  document.getElementById('consult-diag').value = o.diagnosis || '';
+  document.getElementById('consult-rx').value = o.prescription || '';
+  document.getElementById('consult-notes').value = o.notes || '';
   new bootstrap.Modal(document.getElementById('opdConsultModal')).show();
 }
 
