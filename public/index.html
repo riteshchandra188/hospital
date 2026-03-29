@@ -1148,25 +1148,32 @@ async function printOPDSlipById(id) {
 
 async function saveConsult(e) {
   e.preventDefault();
-  const id = document.getElementById('consult-id').value;
-  await apiFetch(`opd/${id}/consult`, {
-    method: 'PUT',
-    body: JSON.stringify({
+  const btn = e.submitter || e.target.querySelector('[type=submit]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+  try {
+    const id = document.getElementById('consult-id').value;
+    await apiFetch(`opd/${id}/consult`, { method: 'PUT', body: JSON.stringify({
       diagnosis: document.getElementById('consult-diag').value,
       prescription: document.getElementById('consult-rx').value,
       notes: document.getElementById('consult-notes').value
-    })
-  });
-  bootstrap.Modal.getInstance(document.getElementById('opdConsultModal')).hide();
-  toast('Consultation saved!');
-  renderPage('doc-opd');
+    })});
+    const modal = bootstrap.Modal.getInstance(document.getElementById('opdConsultModal'));
+    if (modal) modal.hide();
+    toast('Consultation saved!');
+    renderPage('doc-opd');
+  } catch(ex) {
+    toast(ex.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Save & Close'; }
+  }
 }
 
 function printConsultSlip() {
-  const o = _currentConsultOPD;
-  const diag = document.getElementById('consult-diag').value;
-  const rx   = document.getElementById('consult-rx').value;
-  const notes= document.getElementById('consult-notes').value;
+  if (!currentConsultOPD) { toast('No patient loaded for print', 'error'); return; }
+  const o = currentConsultOPD;
+  const diag = document.getElementById('consult-diag').value || '-';
+  const rx = document.getElementById('consult-rx').value || '-';
+  const notes = document.getElementById('consult-notes').value || '';
   const win = window.open('','_blank','width=800,height=900');
   win.document.write(`<!DOCTYPE html><html><head><title>Prescription</title>
   <style>
