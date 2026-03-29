@@ -61,10 +61,10 @@ body{background:#f4f7fb;font-family:'Segoe UI',sans-serif}
         <h6 class="fw-bold mb-0">Patient</h6><small class="text-muted">Book & View</small>
       </div>
       <div class="bg-white rounded-4 p-4 text-center" style="cursor:pointer;width:160px;box-shadow:0 8px 28px rgba(0,0,0,.2)" onclick="showAuth('receptionist')">
-        <i class="bi bi-person-badge-fill text-purple mb-2" style="font-size:2.3rem;color:#6f42c1"></i>
-        <h6 class="fw-bold mb-0">Reception</h6>
-        <small class="text-muted">OPD & Registration</small>
-      </div>
+  <i class="bi bi-person-badge-fill text-purple mb-2" style="font-size:2.3rem;color:#6f42c1"></i>
+  <h6 class="fw-bold mb-0">Reception</h6>
+  <small class="text-muted">OPD & Registration</small>
+</div>
     </div>
   </div>
 </div>
@@ -163,60 +163,27 @@ body{background:#f4f7fb;font-family:'Segoe UI',sans-serif}
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-const API = '/api/';
-let session = JSON.parse(localStorage.getItem('hms-session') || 'null');
-let currentRole = session?.user?.role;
-let _currentConsultOPD = null;
-
+const API='/api/';
+let session=JSON.parse(localStorage.getItem('hms-session')||'null');
+let currentRole=session?.user?.role;
 function saveSession(d){session=d;localStorage.setItem('hms-session',JSON.stringify(d));}
 function clearSession(){session=null;currentRole=null;localStorage.removeItem('hms-session');}
 function authHeaders(){return{'Content-Type':'application/json','Authorization':'Bearer '+session?.token};}
-
-// FIXED apiFetch - solves "Unexpected token '<'" error
-async function apiFetch(endpoint, options = {}) {
-  try {
-    const res = await fetch(API + endpoint, {
-      ...options,
-      headers: { ...authHeaders(), ...(options.headers || {}) }
-    });
-
-    const text = await res.text();
-
-    if (!res.ok) {
-      console.error(`API ${res.status} ${endpoint}:`, text);
-      throw new Error(text || `HTTP ${res.status}`);
-    }
-
-    try {
-      return JSON.parse(text);
-    } catch (e) {
-      console.error("Non-JSON response:", text.substring(0, 300));
-      throw new Error("Server returned invalid data");
-    }
-  } catch (err) {
-    console.error("apiFetch failed:", endpoint, err);
-    toast(err.message || "Server error", "error");
-    throw err;
-  }
-}
-
-function toast(msg, type = 'success') {
-  const el = document.getElementById('toast');
-  el.className = `toast align-items-center border-0 text-white bg-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'primary'}`;
-  document.getElementById('toast-msg').textContent = msg;
-  new bootstrap.Toast(el, { delay: 3000 }).show();
-}
-
+function toast(msg,type='success'){const el=document.getElementById('toast');el.className='toast align-items-center border-0 text-white bg-'+(type==='success'?'success':type==='error'?'danger':'primary');document.getElementById('toast-msg').textContent=msg;new bootstrap.Toast(el,{delay:3000}).show();}
 let authRole;
+let _lastOPDRec = null;
 function togglePwd(id){const el=document.getElementById(id);el.type=el.type==='password'?'text':'password';}
 function show(id){document.getElementById(id).style.display='';}
 function hide(id){document.getElementById(id).style.display='none';}
-
 function showRoleSelect(){hide('auth-screen');show('role-screen');hide('app-shell');}
-
 function showAuth(role){
   authRole=role;hide('role-screen');show('auth-screen');
-  const icons = {admin:'shield-lock-fill text-primary',doctor:'heart-pulse-fill text-success',patient:'person-heart text-warning',receptionist:'person-badge-fill text-purple'};
+  const icons = {
+  admin: 'shield-lock-fill text-primary',
+  doctor: 'heart-pulse-fill text-success',
+  patient: 'person-heart text-warning',
+  receptionist: 'person-badge-fill text-purple'
+};
   document.getElementById('auth-role-badge').innerHTML=`<span class="badge bg-light text-dark border fs-6 px-3 py-2"><i class="bi bi-${icons[role]} me-2"></i>${role.charAt(0).toUpperCase()+role.slice(1)}</span>`;
   const tabs=document.getElementById('auth-tabs');
   if(role==='patient'){tabs.style.removeProperty('display');tabs.innerHTML=`<li class="nav-item"><a class="nav-link active" href="#" onclick="switchAuthTab('login',this)">Login</a></li><li class="nav-item"><a class="nav-link" href="#" onclick="switchAuthTab('register',this)">Register</a></li>`;}
@@ -225,14 +192,12 @@ function showAuth(role){
   document.getElementById('login-title').textContent=role.charAt(0).toUpperCase()+role.slice(1)+' Login';
   document.getElementById('login-err').classList.add('d-none');
 }
-
 function switchAuthTab(tab,el){
   el.closest('ul').querySelectorAll('.nav-link').forEach(a=>a.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('form-login').style.display=tab==='login'?'':'none';
   document.getElementById('form-register').style.display=tab==='register'?'':'none';
 }
-
 async function doLogin(e){
   e.preventDefault();
   const email=document.getElementById('login-email').value.trim();
@@ -246,7 +211,6 @@ async function doLogin(e){
   }catch(ex){err.textContent=ex.message;err.classList.remove('d-none');}
   finally{btn.disabled=false;spin.classList.add('d-none');}
 }
-
 async function doRegister(e){
   e.preventDefault();
   const body={name:document.getElementById('reg-name').value.trim(),email:document.getElementById('reg-email').value.trim(),password:document.getElementById('reg-pass').value,age:document.getElementById('reg-age').value,phone:document.getElementById('reg-phone').value,blood:document.getElementById('reg-blood').value};
@@ -259,14 +223,37 @@ async function doRegister(e){
   }catch(ex){err.textContent=ex.message;err.classList.remove('d-none');}
   finally{spin.classList.add('d-none');}
 }
-
 const menus = {
-  admin: [{ icon: 'speedometer2', label: 'Dashboard', key: 'admin-dash' },{ icon: 'people-fill', label: 'Doctors', key: 'admin-doctors' },{ icon: 'person-badge-fill', label: 'Receptionists', key: 'admin-receptionists' },{ icon: 'person-lines-fill', label: 'Patients', key: 'admin-patients' },{ icon: 'calendar-check-fill', label: 'Appointments', key: 'admin-appts' },{ icon: 'receipt', label: 'Billing', key: 'admin-billing' },{ icon: 'file-earmark-arrow-up', label: 'Reports', key: 'admin-reports' },{ icon: 'clipboard2-pulse-fill', label: 'OPD Records', key: 'admin-opd' }],
-  doctor: [{ icon: 'speedometer2', label: 'Dashboard', key: 'doc-dash' },{ icon: 'calendar-check-fill', label: 'Appointments', key: 'doc-appts' },{ icon: 'file-medical-fill', label: 'Prescriptions', key: 'doc-rx' },{ icon: 'file-earmark-arrow-up', label: 'Upload Report', key: 'doc-reports' },{ icon: 'clipboard2-pulse-fill', label: 'OPD Patients', key: 'doc-opd' }],
-  patient:[{icon:'speedometer2',label:'Dashboard',key:'pat-dash'},{icon:'calendar-plus-fill',label:'Book Appointment',key:'pat-book'},{icon:'file-earmark-medical',label:'My Reports',key:'pat-reports'},{icon:'file-medical-fill',label:'My Prescriptions',key:'pat-rx'}],
-  receptionist: [{ icon: 'speedometer2', label: 'Dashboard', key: 'rec-dash' },{ icon: 'clipboard2-pulse-fill', label: 'New OPD', key: 'rec-opd' },{ icon: 'list-ul', label: 'OPD List', key: 'rec-opd-list' }]
+  admin: [
+    { icon: 'speedometer2', label: 'Dashboard', key: 'admin-dash' },
+    { icon: 'people-fill', label: 'Doctors', key: 'admin-doctors' },
+    { icon: 'person-badge-fill', label: 'Receptionists', key: 'admin-receptionists' },
+    { icon: 'person-lines-fill', label: 'Patients', key: 'admin-patients' },
+    { icon: 'calendar-check-fill', label: 'Appointments', key: 'admin-appts' },
+    { icon: 'receipt', label: 'Billing', key: 'admin-billing' },
+    { icon: 'file-earmark-arrow-up', label: 'Reports', key: 'admin-reports' },
+    { icon: 'clipboard2-pulse-fill', label: 'OPD Records', key: 'admin-opd' },
+  ],
+  doctor: [
+    { icon: 'speedometer2', label: 'Dashboard', key: 'doc-dash' },
+    { icon: 'calendar-check-fill', label: 'Appointments', key: 'doc-appts' },
+    { icon: 'file-medical-fill', label: 'Prescriptions', key: 'doc-rx' },
+    { icon: 'file-earmark-arrow-up', label: 'Upload Report', key: 'doc-reports' },
+    { icon: 'clipboard2-pulse-fill', label: 'OPD Patients', key: 'doc-opd' },
+  
+  ],
+  patient:[
+    {icon:'speedometer2',label:'Dashboard',key:'pat-dash'},
+    {icon:'calendar-plus-fill',label:'Book Appointment',key:'pat-book'},
+    {icon:'file-earmark-medical',label:'My Reports',key:'pat-reports'},
+    {icon:'file-medical-fill',label:'My Prescriptions',key:'pat-rx'},
+  ],
+  receptionist: [
+  { icon: 'speedometer2', label: 'Dashboard', key: 'rec-dash' },
+  { icon: 'clipboard2-pulse-fill', label: 'New OPD', key: 'rec-opd' },
+  { icon: 'list-ul', label: 'OPD List', key: 'rec-opd-list' },
+]
 };
-
 function launchApp(){
   hide('role-screen');hide('auth-screen');show('app-shell');
   const u=session.user;
@@ -276,7 +263,6 @@ function launchApp(){
   document.getElementById('sb-avatar').src='https://ui-avatars.com/api/?name='+encodeURIComponent(u.name)+'&background=0d6efd&color=fff&size=36';
   buildSidebar();renderPage(menus[currentRole][0].key);
 }
-
 function buildSidebar(){
   const nav=document.getElementById('sidebar-nav');
   nav.innerHTML=`<div class="sec-lbl">${currentRole} Panel</div>`;
@@ -286,137 +272,1044 @@ function buildSidebar(){
     a.onclick=e=>{e.preventDefault();renderPage(m.key);};nav.appendChild(a);
   });
 }
-
 function setActiveNav(key){document.querySelectorAll('#sidebar-nav .nav-link').forEach((a,i)=>a.classList.toggle('active',menus[currentRole][i]?.key===key));}
 function logout(){clearSession();hide('app-shell');showRoleSelect();}
-
 const titles = {
-  'admin-dash': 'Dashboard','admin-doctors': 'Manage Doctors','admin-receptionists': 'Manage Receptionists','admin-patients': 'Patients','admin-appts': 'Appointments','admin-billing': 'Billing','admin-reports': 'Manage Reports','admin-opd': 'OPD Records',
-  'doc-dash': 'Dashboard','doc-appts': 'My Appointments','doc-rx': 'Prescriptions','doc-reports': 'Upload Report','doc-opd': 'OPD Patients',
-  'pat-dash': 'Dashboard','pat-book': 'Book Appointment','pat-reports': 'My Reports','pat-rx': 'My Prescriptions',
-  'rec-dash': 'Reception Dashboard','rec-opd': 'New OPD Registration','rec-opd-list': 'OPD List'
+  'admin-dash': 'Dashboard',
+  'admin-doctors': 'Manage Doctors',
+  'admin-receptionists': 'Manage Receptionists',
+  'admin-patients': 'Patients',
+  'admin-appts': 'Appointments',
+  'admin-billing': 'Billing',
+  'admin-reports': 'Manage Reports',
+  'admin-opd': 'OPD Records',
+  'doc-dash': 'Dashboard',
+  'doc-appts': 'My Appointments',
+  'doc-rx': 'Prescriptions',
+  'doc-reports': 'Upload Report',
+  'doc-opd': 'OPD Patients',
+  'pat-dash': 'Dashboard',
+  'pat-book': 'Book Appointment',
+  'pat-reports': 'My Reports',
+  'pat-rx': 'My Prescriptions',
+  'rec-dash': 'Reception Dashboard',
+  'rec-opd': 'New OPD Registration',
+  'rec-opd-list': 'OPD List'
 };
-
-// FIXED renderPage with receptionist support + error handling
 async function renderPage(key){
   setActiveNav(key);
   document.getElementById('page-title').textContent=titles[key]||key;
   const c=document.getElementById('content');
   c.innerHTML=`<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>`;
-
   try{
     switch(key){
-      // Receptionist pages (FIXED)
-      case 'rec-dash':
-        c.innerHTML = `
-          <div class="row g-4">
-            <div class="col-md-4"><div class="stat-card bg-c1 text-center"><div class="val" id="today-opd-count">0</div><div class="lbl">Today's OPD</div></div></div>
-            <div class="col-md-4"><div class="stat-card bg-c2 text-center"><div class="val">12</div><div class="lbl">Waiting Patients</div></div></div>
-          </div>`;
-        break;
-
-      case 'rec-opd-list':
-        const opds = await apiFetch('opd/receptionist');
-        c.innerHTML = `
-          <div class="d-flex justify-content-between mb-3">
-            <input class="form-control w-25" placeholder="Search..." oninput="filterTable(this,'rec-opd-tbl')">
-          </div>
-          <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-body p-0">
-              <table class="table hms-table mb-0" id="rec-opd-tbl">
-                <thead><tr><th>UHID</th><th>Patient</th><th>Mobile</th><th>Doctor</th><th>Token</th><th>Status</th></tr></thead>
-                <tbody>${opds.length ? opds.map(o => `
-                  <tr>
-                    <td><span class="badge bg-light">${o.uhid}</span></td>
-                    <td>${o.full_name}</td>
-                    <td>${o.mobile || '-'}</td>
-                    <td>${o.doctor_name || '-'}</td>
-                    <td><span class="badge bg-primary">${o.token_no}</span></td>
-                    <td><span class="badge bg-${o.status === 'Waiting' ? 'warning text-dark' : 'success'}">${o.status || 'Waiting'}</span></td>
-                  </tr>`).join('') : '<tr><td colspan="6" class="text-center py-4 text-muted">No OPD records yet</td></tr>'}</tbody>
-              </table>
-            </div>
-          </div>`;
-        break;
-
-      // Doctor OPD (now works reliably)
-      case 'doc-opd':
-        c.innerHTML = await docOPD();
-        break;
-
-      // Keep all your existing cases (admin, patient, etc.) - just add them here if needed
-      // For brevity I kept only the fixed ones above. Add your original cases as before.
-      default:
-        c.innerHTML = `<div class="alert alert-info">Page ${key} is under construction</div>`;
+      case 'admin-dash':c.innerHTML=await adminDash();break;
+      case 'admin-doctors':c.innerHTML=await adminDoctors();break;
+      case 'admin-receptionists': c.innerHTML = await adminReceptionists(); break;
+      case 'admin-patients':c.innerHTML=await adminPatients();break;
+      case 'admin-appts':c.innerHTML=await adminAppts();break;
+      case 'admin-billing':c.innerHTML=await adminBilling();break;
+      case 'admin-reports':c.innerHTML=await adminReports();break;
+      case 'admin-opd': c.innerHTML = await adminOPD(); break;
+      case 'doc-dash':c.innerHTML=await docDash();break;
+      case 'doc-appts':c.innerHTML=await docAppts();break;
+      case 'doc-rx':c.innerHTML=await docRx();break;
+      case 'doc-reports':c.innerHTML=await docReports();break;
+      case 'doc-opd': c.innerHTML = await docOPD(); break;
+      case 'pat-dash':c.innerHTML=await patDash();break;
+      case 'pat-book':c.innerHTML=await patBook();break;
+      case 'pat-reports':c.innerHTML=await patReports();break;
+      case 'pat-rx':c.innerHTML=await patRx();break;
+      case 'rec-dash': c.innerHTML = await recDash(); break;
+      case 'rec-opd': c.innerHTML = await recOPDForm(); break;
+      case 'rec-opd-list': c.innerHTML = await recOPDList(); break;
     }
-  } catch(e){
-    c.innerHTML = `<div class="alert alert-danger">Error: ${e.message}</div>`;
-  }
+  }catch(ex){c.innerHTML=`<div class="alert alert-danger">${ex.message}</div>`;}
+}
+async function apiFetch(path,opts={}){
+  const r=await fetch(API+path,{...opts,headers:authHeaders()});
+  if(r.status===401){logout();throw new Error('Session expired');}
+  const d=await r.json();if(!r.ok)throw new Error(d.error||'API error');return d;
+}
+async function adminDash(){
+  const s=await apiFetch('stats');
+  setTimeout(async()=>{try{const appts=await apiFetch('appointments');document.getElementById('dash-ap').innerHTML=apptTableDoc(appts.slice(0,5));}catch(e){}},100);
+  return `<div class="row g-4 mb-4">
+    <div class="col-sm-6 col-xl-3"><div class="stat-card bg-c1"><div class="d-flex justify-content-between"><div><div class="lbl">Doctors</div><div class="val">${s.doctors}</div></div><i class="bi bi-people-fill" style="font-size:2.2rem;opacity:.8"></i></div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="stat-card bg-c2"><div class="d-flex justify-content-between"><div><div class="lbl">Patients</div><div class="val">${s.patients}</div></div><i class="bi bi-person-heart" style="font-size:2.2rem;opacity:.8"></i></div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="stat-card bg-c3"><div class="d-flex justify-content-between"><div><div class="lbl">Appointments</div><div class="val">${s.appointments}</div></div><i class="bi bi-calendar-check" style="font-size:2.2rem;opacity:.8"></i></div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="stat-card bg-c4"><div class="d-flex justify-content-between"><div><div class="lbl">Revenue</div><div class="val">&#8377;${Number(s.revenue).toLocaleString()}</div></div><i class="bi bi-cash-coin" style="font-size:2.2rem;opacity:.8"></i></div></div></div>
+  </div>
+  <div class="row g-4">
+    <div class="col-md-8"><div class="card border-0 shadow-sm rounded-4"><div class="card-header bg-white fw-semibold border-0 pt-3">Recent Appointments</div><div class="card-body p-0" id="dash-ap"><div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div></div></div></div></div>
+    <div class="col-md-4"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-header bg-white fw-semibold border-0 pt-3">Quick Actions</div><div class="card-body d-flex flex-column gap-2">
+      <button class="btn btn-primary" onclick="renderPage('admin-doctors')"><i class="bi bi-plus-circle me-2"></i>Add Doctor</button>
+      <button class="btn btn-success" onclick="renderPage('admin-patients')"><i class="bi bi-people me-2"></i>View Patients</button>
+      <button class="btn btn-warning text-dark" onclick="renderPage('admin-appts')"><i class="bi bi-calendar-check me-2"></i>Appointments</button>
+      <button class="btn btn-danger" onclick="renderPage('admin-billing')"><i class="bi bi-receipt me-2"></i>Billing</button>
+      <button class="btn btn-info text-white" onclick="renderPage('admin-reports')"><i class="bi bi-file-earmark-arrow-up me-2"></i>Upload Report</button>
+    </div></div></div>
+  </div>`;
+}
+async function adminDoctors(){
+  const docs=await apiFetch('doctors');
+  const rows=docs.map(d=>`<tr>
+    <td><img src="https://ui-avatars.com/api/?name=${encodeURIComponent(d.name)}&background=0d6efd&color=fff&size=30" class="rounded-circle me-2" width="30">${d.name}</td>
+    <td>${d.speciality||'-'}</td><td>${d.phone||'-'}</td><td>${d.email}</td>
+    <td><span class="badge bg-${d.status==='Active'?'success':'secondary'}">${d.status}</span></td>
+    <td>
+      <button class="btn btn-sm btn-outline-primary me-1" onclick="editDoctorModal(${d.id},'${d.name}','${d.speciality||''}','${d.phone||''}','${d.email}','${d.status}')"><i class="bi bi-pencil"></i></button>
+      <button class="btn btn-sm btn-outline-danger" onclick="deleteDoctor(${d.id})"><i class="bi bi-trash"></i></button>
+    </td></tr>`).join('');
+  return `<div class="d-flex justify-content-between align-items-center mb-3">
+    <input class="form-control w-25" placeholder="Search..." oninput="filterTable(this,'doc-tbl')">
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDocModal"><i class="bi bi-plus-lg me-1"></i>Add Doctor</button>
+  </div>
+  <div class="card border-0 shadow-sm rounded-4"><div class="card-body p-0">
+    <table class="table hms-table mb-0 align-middle" id="doc-tbl">
+      <thead><tr><th>Name</th><th>Speciality</th><th>Phone</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div></div>
+  <div class="modal fade" id="addDocModal" tabindex="-1"><div class="modal-dialog"><form class="modal-content rounded-4" onsubmit="addDoctor(event)">
+    <div class="modal-header"><h5 class="modal-title">Add Doctor</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+      <div class="mb-2"><label class="form-label fw-semibold">Full Name</label><input id="d-name" class="form-control" required></div>
+      <div class="mb-2"><label class="form-label fw-semibold">Speciality</label><input id="d-spec" class="form-control"></div>
+      <div class="row g-2 mb-2"><div class="col"><label class="form-label fw-semibold">Phone</label><input id="d-phone" class="form-control"></div><div class="col"><label class="form-label fw-semibold">Email</label><input id="d-email" class="form-control" type="email" required></div></div>
+      <div class="mb-2"><label class="form-label fw-semibold">Password</label><input id="d-pass" class="form-control" type="password" value="Doctor123" required></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button><button class="btn btn-primary" type="submit">Save</button></div>
+  </form></div></div>
+  <div class="modal fade" id="editDocModal" tabindex="-1"><div class="modal-dialog"><form class="modal-content rounded-4" onsubmit="updateDoctor(event)">
+    <div class="modal-header"><h5 class="modal-title">Edit Doctor</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+      <input type="hidden" id="ed-id">
+      <div class="mb-2"><label class="form-label fw-semibold">Full Name</label><input id="ed-name" class="form-control" required></div>
+      <div class="mb-2"><label class="form-label fw-semibold">Speciality</label><input id="ed-spec" class="form-control"></div>
+      <div class="row g-2 mb-2"><div class="col"><label class="form-label fw-semibold">Phone</label><input id="ed-phone" class="form-control"></div><div class="col"><label class="form-label fw-semibold">Email</label><input id="ed-email" class="form-control" type="email" required></div></div>
+      <div class="mb-2"><label class="form-label fw-semibold">Status</label><select id="ed-status" class="form-select"><option>Active</option><option>Inactive</option></select></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button><button class="btn btn-primary" type="submit">Update</button></div>
+  </form></div></div>`;
+}
+async function addDoctor(e){e.preventDefault();await apiFetch('doctors',{method:'POST',body:JSON.stringify({name:document.getElementById('d-name').value,speciality:document.getElementById('d-spec').value,phone:document.getElementById('d-phone').value,email:document.getElementById('d-email').value,password:document.getElementById('d-pass').value})});bootstrap.Modal.getInstance(document.getElementById('addDocModal')).hide();toast('Doctor added!');renderPage('admin-doctors');}
+function editDoctorModal(id,name,spec,phone,email,status){document.getElementById('ed-id').value=id;document.getElementById('ed-name').value=name;document.getElementById('ed-spec').value=spec;document.getElementById('ed-phone').value=phone;document.getElementById('ed-email').value=email;document.getElementById('ed-status').value=status;new bootstrap.Modal(document.getElementById('editDocModal')).show();}
+async function updateDoctor(e){e.preventDefault();const id=document.getElementById('ed-id').value;await apiFetch('doctors/'+id,{method:'PUT',body:JSON.stringify({name:document.getElementById('ed-name').value,speciality:document.getElementById('ed-spec').value,phone:document.getElementById('ed-phone').value,email:document.getElementById('ed-email').value,status:document.getElementById('ed-status').value})});bootstrap.Modal.getInstance(document.getElementById('editDocModal')).hide();toast('Doctor updated!');renderPage('admin-doctors');}
+async function deleteDoctor(id){if(!confirm('Delete this doctor?'))return;await apiFetch('doctors/'+id,{method:'DELETE'});toast('Deleted','error');renderPage('admin-doctors');}
+async function adminReceptionists() {
+  const recs = await apiFetch('receptionists');
+  const rows = recs.map(r => `<tr>
+    <td><img src="https://ui-avatars.com/api/?name=${encodeURIComponent(r.name)}&background=6f42c1&color=fff&size=30" class="rounded-circle me-2" width="30">${r.name}</td>
+    <td>${r.email}</td>
+    <td>${r.phone || '-'}</td>
+    <td><span class="badge bg-${r.status === 'Active' ? 'success' : 'secondary'}">${r.status}</span></td>
+    <td>
+      <button class="btn btn-sm btn-outline-primary me-1" onclick="editRecModal(${r.id},'${r.name}','${r.email}','${r.phone || ''}','${r.status}')"><i class="bi bi-pencil"></i></button>
+      <button class="btn btn-sm btn-outline-danger" onclick="deleteRec(${r.id})"><i class="bi bi-trash"></i></button>
+    </td>
+  </tr>`).join('');
+
+  return `
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <input class="form-control w-25" placeholder="Search..." oninput="filterTable(this,'rec-tbl')">
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRecModal">
+      <i class="bi bi-plus-lg me-1"></i>Add Receptionist
+    </button>
+  </div>
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-0">
+      <table class="table hms-table mb-0 align-middle" id="rec-tbl">
+        <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Add Receptionist Modal -->
+  <div class="modal fade" id="addRecModal" tabindex="-1">
+    <div class="modal-dialog">
+      <form class="modal-content rounded-4" onsubmit="addRec(event)">
+        <div class="modal-header">
+          <h5 class="modal-title">Add Receptionist</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2"><label class="form-label fw-semibold">Full Name</label><input id="rc-name" class="form-control" required></div>
+          <div class="mb-2"><label class="form-label fw-semibold">Email</label><input id="rc-email" class="form-control" type="email" required></div>
+          <div class="mb-2"><label class="form-label fw-semibold">Phone</label><input id="rc-phone" class="form-control"></div>
+          <div class="mb-2"><label class="form-label fw-semibold">Password</label><input id="rc-pass" class="form-control" type="password" value="Rec@123" required></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+          <button class="btn btn-primary" type="submit">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Receptionist Modal -->
+  <div class="modal fade" id="editRecModal" tabindex="-1">
+    <div class="modal-dialog">
+      <form class="modal-content rounded-4" onsubmit="updateRec(event)">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Receptionist</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="erc-id">
+          <div class="mb-2"><label class="form-label fw-semibold">Full Name</label><input id="erc-name" class="form-control" required></div>
+          <div class="mb-2"><label class="form-label fw-semibold">Email</label><input id="erc-email" class="form-control" type="email" required></div>
+          <div class="mb-2"><label class="form-label fw-semibold">Phone</label><input id="erc-phone" class="form-control"></div>
+          <div class="mb-2"><label class="form-label fw-semibold">Status</label>
+            <select id="erc-status" class="form-select"><option>Active</option><option>Inactive</option></select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+          <button class="btn btn-primary" type="submit">Update</button>
+        </div>
+      </form>
+    </div>
+  </div>`;
 }
 
-// Doctor Consultation - FIXED
-async function saveConsult(e) {
+async function addRec(e) {
   e.preventDefault();
-  const id = document.getElementById('consult-id').value;
+  await apiFetch('receptionists', { method: 'POST', body: JSON.stringify({
+    name: document.getElementById('rc-name').value,
+    email: document.getElementById('rc-email').value,
+    phone: document.getElementById('rc-phone').value,
+    password: document.getElementById('rc-pass').value
+  })});
+  bootstrap.Modal.getInstance(document.getElementById('addRecModal')).hide();
+  toast('Receptionist added!');
+  renderPage('admin-receptionists');
+}
+
+function editRecModal(id, name, email, phone, status) {
+  document.getElementById('erc-id').value = id;
+  document.getElementById('erc-name').value = name;
+  document.getElementById('erc-email').value = email;
+  document.getElementById('erc-phone').value = phone;
+  document.getElementById('erc-status').value = status;
+  new bootstrap.Modal(document.getElementById('editRecModal')).show();
+}
+
+async function updateRec(e) {
+  e.preventDefault();
+  const id = document.getElementById('erc-id').value;
+  await apiFetch(`receptionists/${id}`, { method: 'PUT', body: JSON.stringify({
+    name: document.getElementById('erc-name').value,
+    email: document.getElementById('erc-email').value,
+    phone: document.getElementById('erc-phone').value,
+    status: document.getElementById('erc-status').value
+  })});
+  bootstrap.Modal.getInstance(document.getElementById('editRecModal')).hide();
+  toast('Receptionist updated!');
+  renderPage('admin-receptionists');
+}
+
+async function deleteRec(id) {
+  if (!confirm('Delete this receptionist?')) return;
+  await apiFetch(`receptionists/${id}`, { method: 'DELETE' });
+  toast('Deleted', 'error');
+  renderPage('admin-receptionists');
+}
+  async function adminPatients(){
+  const pts=await apiFetch('patients');
+  return `<div class="mb-3"><input class="form-control w-25" placeholder="Search..." oninput="filterTable(this,'pat-tbl')"></div>
+  <div class="card border-0 shadow-sm rounded-4"><div class="card-body p-0">
+    <table class="table hms-table mb-0 align-middle" id="pat-tbl">
+      <thead><tr><th>Name</th><th>Age</th><th>Blood</th><th>Phone</th><th>Email</th><th>Status</th></tr></thead>
+      <tbody>${pts.map(p=>`<tr><td><img src="https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=198754&color=fff&size=30" class="rounded-circle me-2" width="30">${p.name}</td><td>${p.age||'-'}</td><td><span class="badge bg-light text-dark border">${p.blood_group||'-'}</span></td><td>${p.phone||'-'}</td><td>${p.email}</td><td><span class="badge bg-${p.status==='Active'?'success':'secondary'}">${p.status}</span></td></tr>`).join('')}
+      </tbody>
+    </table></div></div>`;
+}
+async function adminAppts(){
+  const appts=await apiFetch('appointments');
+  return `<div class="d-flex justify-content-between align-items-center mb-3">
+    <input class="form-control w-25" placeholder="Search..." oninput="filterTable(this,'appt-tbl')">
+    <select class="form-select" style="width:160px" onchange="filterStatus(this,'appt-tbl')"><option value="">All Status</option><option>Pending</option><option>Confirmed</option><option>Completed</option><option>Cancelled</option></select>
+  </div>
+  <div class="card border-0 shadow-sm rounded-4"><div class="card-body p-0">
+    <table class="table hms-table mb-0 align-middle" id="appt-tbl">
+      <thead><tr><th>Patient</th><th>Doctor</th><th>Date</th><th>Time</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>${appts.map(a=>`<tr><td>${a.patient_name}</td><td>${a.doctor_name}</td><td>${a.date}</td><td>${a.time}</td><td>${a.reason||'-'}</td><td><span class="badge ${statusBadge(a.status)}">${a.status}</span></td>
+        <td><select class="form-select form-select-sm" style="width:130px" onchange="updateApptStatus(${a.id},this.value)"><option ${a.status==='Pending'?'selected':''}>Pending</option><option ${a.status==='Confirmed'?'selected':''}>Confirmed</option><option ${a.status==='Completed'?'selected':''}>Completed</option><option ${a.status==='Cancelled'?'selected':''}>Cancelled</option></select></td></tr>`).join('')}
+      </tbody>
+    </table></div></div>`;
+}
+async function updateApptStatus(id,status){await apiFetch('appointments/'+id+'/status',{method:'PUT',body:JSON.stringify({status})});toast('Status: '+status);}
+async function adminBilling(){
+  const bills=await apiFetch('billing');
+  const total=bills.reduce((a,b)=>a+Number(b.amount),0);
+  const paid=bills.filter(b=>b.status==='Paid').reduce((a,b)=>a+Number(b.amount),0);
+  return `<div class="row g-3 mb-4">
+    <div class="col-md-4"><div class="stat-card bg-c1 p-3"><div class="lbl">Total Billed</div><div class="val">&#8377;${total.toLocaleString()}</div></div></div>
+    <div class="col-md-4"><div class="stat-card bg-c2 p-3"><div class="lbl">Collected</div><div class="val">&#8377;${paid.toLocaleString()}</div></div></div>
+    <div class="col-md-4"><div class="stat-card bg-c3 p-3"><div class="lbl">Pending</div><div class="val">&#8377;${(total-paid).toLocaleString()}</div></div></div>
+  </div>
+  <div class="card border-0 shadow-sm rounded-4"><div class="card-body p-0">
+    <table class="table hms-table mb-0 align-middle">
+      <thead><tr><th>Bill ID</th><th>Patient</th><th>Date</th><th>Type</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>${bills.map(b=>`<tr><td>#${String(b.id).padStart(4,'0')}</td><td>${b.patient_name}</td><td>${b.date}</td><td>${b.type}</td><td>&#8377;${Number(b.amount).toLocaleString()}</td><td><span class="badge ${b.status==='Paid'?'bg-success':'bg-warning text-dark'}">${b.status}</span></td><td>${b.status==='Pending'?`<button class="btn btn-sm btn-outline-success" onclick="markPaid(${b.id})">Mark Paid</button>`:'<span class="text-muted small">Done</span>'}</td></tr>`).join('')}
+      </tbody>
+    </table></div></div>`;
+}
+async function markPaid(id){await apiFetch('billing/'+id+'/pay',{method:'PUT'});toast('Marked as Paid!');renderPage('admin-billing');}
+async function adminReports(){
+  const pts=await apiFetch('patients');
+  const reports=await apiFetch('reports');
+  return `<div class="row g-4">
+    <div class="col-md-5"><div class="card border-0 shadow-sm rounded-4"><div class="card-header bg-white fw-semibold border-0 pt-3">Upload Report</div>
+      <div class="card-body"><form onsubmit="uploadReport(event,'admin')">
+        <div class="mb-3"><label class="form-label fw-semibold">Patient</label><select id="rpt-patient" class="form-select" required><option value="">Select Patient...</option>${pts.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Test Name</label><input id="rpt-test" class="form-control" placeholder="e.g. Blood CBC, X-Ray" required></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Date</label><input type="date" id="rpt-date" class="form-control" value="${new Date().toISOString().split('T')[0]}" required></div>
+        <div class="mb-3"><label class="form-label fw-semibold">PDF File</label><input type="file" id="rpt-file" class="form-control" accept=".pdf" required></div>
+        <button type="submit" class="btn btn-success w-100"><i class="bi bi-upload me-1"></i>Upload Report</button>
+      </form></div></div></div>
+    <div class="col-md-7"><div class="card border-0 shadow-sm rounded-4"><div class="card-header bg-white fw-semibold border-0 pt-3">All Uploaded Reports</div>
+      <div class="card-body p-0"><table class="table hms-table mb-0 align-middle">
+        <thead><tr><th>Patient</th><th>Test</th><th>Date</th><th>By</th><th>Action</th></tr></thead>
+        <tbody>${reports.length?reports.map(r=>`<tr><td>${r.patient_name}</td><td>${r.test}</td><td>${r.date}</td><td><span class="badge bg-light text-dark border">${r.uploaded_by||'—'}</span></td>
+          <td><button class="btn btn-sm btn-outline-primary me-1" onclick="downloadReport(${r.id})"><i class="bi bi-download"></i></button>
+          <button class="btn btn-sm btn-outline-danger" onclick="deleteReport(${r.id})"><i class="bi bi-trash"></i></button></td></tr>`).join(''):'<tr><td colspan="5" class="text-center text-muted py-3">No reports yet.</td></tr>'}
+        </tbody>
+      </table></div></div></div>
+  </div>`;
+}
+async function docDash(){
+  const appts=await apiFetch('appointments/doctor');
+  const today=new Date().toISOString().split('T')[0];
+  const todayA=appts.filter(a=>a.date===today);
+  return `<div class="row g-4 mb-4">
+    <div class="col-sm-4"><div class="stat-card bg-c1"><div class="d-flex justify-content-between"><div><div class="lbl">Today</div><div class="val">${todayA.length}</div></div><i class="bi bi-calendar-day" style="font-size:2rem;opacity:.8"></i></div></div></div>
+    <div class="col-sm-4"><div class="stat-card bg-c2"><div class="d-flex justify-content-between"><div><div class="lbl">Total</div><div class="val">${appts.length}</div></div><i class="bi bi-calendar-check" style="font-size:2rem;opacity:.8"></i></div></div></div>
+    <div class="col-sm-4"><div class="stat-card bg-c3"><div class="d-flex justify-content-between"><div><div class="lbl">Pending</div><div class="val">${appts.filter(a=>a.status==='Pending').length}</div></div><i class="bi bi-clock-history" style="font-size:2rem;opacity:.8"></i></div></div></div>
+  </div>
+  <div class="card border-0 shadow-sm rounded-4"><div class="card-header bg-white fw-semibold border-0 pt-3">Today's Patients</div>
+  <div class="card-body p-0">${apptTableDoc(todayA)}</div></div>`;
+}
+async function docAppts(){
+  const appts=await apiFetch('appointments/doctor');
+  return `<div class="mb-3 d-flex gap-2"><input class="form-control w-25" placeholder="Search..." oninput="filterTable(this,'doc-appt-tbl')"><input type="date" class="form-control" style="width:170px" onchange="filterDate(this,'doc-appt-tbl')"></div>
+  <div class="card border-0 shadow-sm rounded-4"><div class="card-body p-0">
+    <table class="table hms-table mb-0 align-middle" id="doc-appt-tbl">
+      <thead><tr><th>Patient</th><th>Age</th><th>Blood</th><th>Date</th><th>Time</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>${appts.map(a=>`<tr><td>${a.patient_name}</td><td>${a.age||'-'}</td><td>${a.blood_group||'-'}</td><td>${a.date}</td><td>${a.time}</td><td>${a.reason||'-'}</td><td><span class="badge ${statusBadge(a.status)}">${a.status}</span></td><td><button class="btn btn-sm btn-outline-success" onclick="updateApptStatus(${a.id},'Completed')">Done</button></td></tr>`).join('')}
+      </tbody>
+    </table></div></div>`;
+}
+async function docRx(){
+  const rxs=await apiFetch('prescriptions/doctor');
+  const pts=await apiFetch('patients');
+  return `<div class="row g-4">
+    <div class="col-md-5"><div class="card border-0 shadow-sm rounded-4"><div class="card-header bg-white fw-semibold border-0 pt-3">Write Prescription</div>
+      <div class="card-body"><form onsubmit="savePrescription(event)">
+        <div class="mb-3"><label class="form-label fw-semibold">Patient</label><select id="rx-patient" class="form-select" required><option value="">Select...</option>${pts.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Diagnosis</label><input id="rx-diag" class="form-control" required></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Medicines</label><textarea id="rx-meds" class="form-control" rows="4" required></textarea></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Notes</label><textarea id="rx-notes" class="form-control" rows="2"></textarea></div>
+        <button type="submit" class="btn btn-success w-100"><i class="bi bi-check-circle me-1"></i>Save</button>
+      </form></div></div></div>
+    <div class="col-md-7"><div class="card border-0 shadow-sm rounded-4"><div class="card-header bg-white fw-semibold border-0 pt-3">Past Prescriptions</div>
+      <div class="card-body" style="max-height:520px;overflow-y:auto">${rxs.length?rxs.map(rx=>`<div class="rx-card p-3 mb-3"><div class="d-flex justify-content-between"><strong>${rx.patient_name}</strong><small class="text-muted">${rx.created_at?.split('T')[0]}</small></div><div class="mt-1"><b>Dx:</b> ${rx.diagnosis}</div><div class="mt-1"><b>Rx:</b><pre class="mb-0 small" style="font-family:inherit">${rx.medicines}</pre></div>${rx.notes?`<div class="text-muted small mt-1">${rx.notes}</div>`:''}</div>`).join(''):'<p class="text-muted text-center py-3">No prescriptions yet.</p>'}
+      </div></div></div>
+  </div>`;
+}
+async function savePrescription(e){e.preventDefault();await apiFetch('prescriptions',{method:'POST',body:JSON.stringify({patient_id:document.getElementById('rx-patient').value,diagnosis:document.getElementById('rx-diag').value,medicines:document.getElementById('rx-meds').value,notes:document.getElementById('rx-notes').value})});toast('Prescription saved!');renderPage('doc-rx');}
+async function docReports(){
+  const pts=await apiFetch('patients');
+  return `<div class="row g-4">
+    <div class="col-md-5"><div class="card border-0 shadow-sm rounded-4"><div class="card-header bg-white fw-semibold border-0 pt-3">Upload Patient Report</div>
+      <div class="card-body"><form onsubmit="uploadReport(event,'doctor')">
+        <div class="mb-3"><label class="form-label fw-semibold">Patient</label><select id="rpt-patient" class="form-select" required><option value="">Select Patient...</option>${pts.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Test Name</label><input id="rpt-test" class="form-control" placeholder="e.g. Blood CBC, ECG" required></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Date</label><input type="date" id="rpt-date" class="form-control" value="${new Date().toISOString().split('T')[0]}" required></div>
+        <div class="mb-3"><label class="form-label fw-semibold">PDF File</label><input type="file" id="rpt-file" class="form-control" accept=".pdf" required></div>
+        <button type="submit" class="btn btn-success w-100"><i class="bi bi-upload me-1"></i>Upload Report</button>
+      </form></div></div></div>
+    <div class="col-md-7"><div class="card border-0 shadow-sm rounded-4 h-100"><div class="card-header bg-white fw-semibold border-0 pt-3">How it works</div>
+      <div class="card-body"><ul class="list-group list-group-flush">
+        <li class="list-group-item"><i class="bi bi-1-circle-fill text-primary me-2"></i>Select the patient</li>
+        <li class="list-group-item"><i class="bi bi-2-circle-fill text-primary me-2"></i>Enter the test name</li>
+        <li class="list-group-item"><i class="bi bi-3-circle-fill text-primary me-2"></i>Choose the report date</li>
+        <li class="list-group-item"><i class="bi bi-4-circle-fill text-primary me-2"></i>Upload the PDF file</li>
+        <li class="list-group-item"><i class="bi bi-5-circle-fill text-success me-2"></i>Patient can download it instantly!</li>
+      </ul></div></div></div>
+  </div>`;
+}
+async function patDash(){
+  const appts=await apiFetch('appointments/mine');
+  const rxs=await apiFetch('prescriptions/mine');
+  return `<div class="row g-4 mb-4">
+    <div class="col-sm-4"><div class="stat-card bg-c1"><div class="d-flex justify-content-between"><div><div class="lbl">Appointments</div><div class="val">${appts.length}</div></div><i class="bi bi-calendar-check" style="font-size:2rem;opacity:.8"></i></div></div></div>
+    <div class="col-sm-4"><div class="stat-card bg-c2"><div class="d-flex justify-content-between"><div><div class="lbl">Prescriptions</div><div class="val">${rxs.length}</div></div><i class="bi bi-file-medical" style="font-size:2rem;opacity:.8"></i></div></div></div>
+    <div class="col-sm-4"><div class="stat-card bg-c3"><div class="d-flex justify-content-between"><div><div class="lbl">Pending</div><div class="val">${appts.filter(a=>a.status==='Pending').length}</div></div><i class="bi bi-clock-history" style="font-size:2rem;opacity:.8"></i></div></div></div>
+  </div>
+  <div class="row g-4">
+    <div class="col-md-7"><div class="card border-0 shadow-sm rounded-4"><div class="card-header bg-white fw-semibold border-0 pt-3">My Appointments</div>
+      <div class="card-body p-0"><table class="table hms-table mb-0 align-middle"><thead><tr><th>Doctor</th><th>Speciality</th><th>Date</th><th>Time</th><th>Status</th></tr></thead>
+      <tbody>${appts.map(a=>`<tr><td>${a.doctor_name}</td><td>${a.speciality||'-'}</td><td>${a.date}</td><td>${a.time}</td><td><span class="badge ${statusBadge(a.status)}">${a.status}</span></td></tr>`).join('')}</tbody></table></div></div></div>
+    <div class="col-md-5"><div class="card border-0 shadow-sm rounded-4"><div class="card-header bg-white fw-semibold border-0 pt-3">Latest Prescription</div>
+      <div class="card-body">${rxs[0]?`<div class="rx-card p-3"><div class="d-flex justify-content-between"><b>${rxs[0].doctor_name}</b><small class="text-muted">${rxs[0].created_at?.split('T')[0]}</small></div><div class="mt-2"><b>Dx:</b> ${rxs[0].diagnosis}</div><div class="mt-1"><b>Rx:</b><pre class="small mb-0" style="font-family:inherit">${rxs[0].medicines}</pre></div>${rxs[0].notes?`<div class="text-muted small mt-1">${rxs[0].notes}</div>`:''}</div>`:'<p class="text-muted text-center py-3">No prescriptions yet.</p>'}
+      <button class="btn btn-outline-primary btn-sm mt-3 w-100" onclick="renderPage('pat-book')"><i class="bi bi-calendar-plus me-1"></i>Book Appointment</button></div></div></div>
+  </div>`;
+}
+async function patBook(){
+  const docs=await apiFetch('doctors');
+  return `<div class="row justify-content-center"><div class="col-md-6"><div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header rounded-top-4 text-white fw-semibold" style="background:linear-gradient(135deg,#198754,#20c997);padding:18px 22px"><i class="bi bi-calendar-plus me-2"></i>Book Appointment</div>
+    <div class="card-body p-4"><form onsubmit="bookAppointment(event)">
+      <div class="mb-3"><label class="form-label fw-semibold">Select Doctor</label><select id="book-doc" class="form-select" required><option value="">Choose...</option>${docs.map(d=>`<option value="${d.id}">${d.name} (${d.speciality||'General'})</option>`).join('')}</select></div>
+      <div class="row g-3 mb-3"><div class="col"><label class="form-label fw-semibold">Date</label><input type="date" id="book-date" class="form-control" required min="${new Date().toISOString().split('T')[0]}"></div><div class="col"><label class="form-label fw-semibold">Time</label><input type="time" id="book-time" class="form-control" required></div></div>
+      <div class="mb-3"><label class="form-label fw-semibold">Reason</label><textarea id="book-reason" class="form-control" rows="3" required></textarea></div>
+      <button type="submit" class="btn btn-success w-100 fw-semibold"><i class="bi bi-check-circle me-1"></i>Confirm Appointment</button>
+    </form></div></div></div></div>`;
+}
+async function bookAppointment(e){e.preventDefault();await apiFetch('appointments',{method:'POST',body:JSON.stringify({doctor_id:document.getElementById('book-doc').value,date:document.getElementById('book-date').value,time:document.getElementById('book-time').value,reason:document.getElementById('book-reason').value})});toast('Appointment booked!');renderPage('pat-dash');}
+async function patReports(){
+  const reports=await apiFetch('reports/mine');
+  return `<div class="card border-0 shadow-sm rounded-4"><div class="card-header bg-white fw-semibold border-0 pt-3">My Medical Reports</div>
+    <div class="card-body p-0"><table class="table hms-table mb-0 align-middle">
+      <thead><tr><th>Date</th><th>Test</th><th>Uploaded By</th><th>Status</th><th>Download</th></tr></thead>
+      <tbody>${reports.length?reports.map(r=>`<tr><td>${r.date}</td><td>${r.test}</td><td><span class="badge bg-light text-dark border">${r.uploaded_by||'—'}</span></td><td><span class="badge ${r.status==='Ready'?'bg-success':'bg-warning text-dark'}">${r.status}</span></td>
+        <td>${r.status==='Ready'?`<button class="btn btn-sm btn-outline-primary" onclick="downloadReport(${r.id})"><i class="bi bi-download me-1"></i>PDF</button>`:'<button class="btn btn-sm btn-outline-secondary" disabled>Pending</button>'}</td></tr>`).join(''):'<tr><td colspan="5" class="text-center text-muted py-3">No reports yet.</td></tr>'}
+      </tbody>
+    </table></div></div>`;
+}
+  // ─── RECEPTIONIST FUNCTIONS ──────────────────────────────────
+
+async function recDash() {
+  const opds = await apiFetch('opd');
+  const today = new Date().toISOString().split('T')[0];
+  const todayOpds = opds.filter(o => o.reg_date?.split('T')[0] === today || o.reg_date === today);
+  const waiting = opds.filter(o => o.status === 'Waiting');
+  const completed = opds.filter(o => o.status === 'Completed');
+  return `
+  <div class="row g-4 mb-4">
+    <div class="col-sm-4"><div class="stat-card bg-c1"><div class="d-flex justify-content-between"><div><div class="lbl">Today's OPD</div><div class="val">${todayOpds.length}</div></div><i class="bi bi-clipboard2-pulse" style="font-size:2rem;opacity:.8"></i></div></div></div>
+    <div class="col-sm-4"><div class="stat-card bg-c2"><div class="d-flex justify-content-between"><div><div class="lbl">Waiting</div><div class="val">${waiting.length}</div></div><i class="bi bi-hourglass-split" style="font-size:2rem;opacity:.8"></i></div></div></div>
+    <div class="col-sm-4"><div class="stat-card bg-c3"><div class="d-flex justify-content-between"><div><div class="lbl">Completed</div><div class="val">${completed.length}</div></div><i class="bi bi-check-circle" style="font-size:2rem;opacity:.8"></i></div></div></div>
+  </div>
+  <div class="row g-4">
+    <div class="col-md-8">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white fw-semibold border-0 pt-3">Today's OPD Registrations</div>
+        <div class="card-body p-0">
+          <table class="table hms-table mb-0 align-middle">
+            <thead><tr><th>UHID</th><th>Patient</th><th>Doctor</th><th>Token</th><th>Status</th></tr></thead>
+            <tbody>${todayOpds.length ? todayOpds.map(o => `<tr>
+              <td><span class="badge bg-light text-dark border">${o.uhid}</span></td>
+              <td>${o.full_name}</td>
+              <td>${o.doctor_name || '-'}</td>
+              <td><span class="badge bg-primary">${o.token_no}</span></td>
+              <td><span class="badge bg-${o.status==='Waiting'?'warning text-dark':o.status==='Completed'?'success':'info'}">${o.status}</span></td>
+            </tr>`).join('') : '<tr><td colspan="5" class="text-center text-muted py-3">No OPD today</td></tr>'}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card-header bg-white fw-semibold border-0 pt-3">Quick Actions</div>
+        <div class="card-body d-flex flex-column gap-2">
+          <button class="btn btn-primary" onclick="renderPage('rec-opd')"><i class="bi bi-plus-circle me-2"></i>New OPD Registration</button>
+          <button class="btn btn-success" onclick="renderPage('rec-opd-list')"><i class="bi bi-list-ul me-2"></i>View All OPD</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function recOPDForm() {
+  const docs = await apiFetch('doctors');
+  return `
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header bg-white border-0 pt-3 pb-0">
+      <h5 class="fw-bold"><i class="bi bi-clipboard2-pulse-fill text-primary me-2"></i>OPD Registration Form</h5>
+      <p class="text-muted small">All fields marked * are required</p>
+    </div>
+    <div class="card-body">
+      <form onsubmit="submitOPD(event)">
+
+        <!-- 1. Patient Personal Details -->
+        <div class="p-3 mb-3 rounded-3" style="background:#f0f7ff;border-left:4px solid #0d6efd">
+          <h6 class="fw-bold text-primary mb-3"><i class="bi bi-person-fill me-2"></i>1. Patient Personal Details</h6>
+          <div class="row g-3">
+            <div class="col-md-6"><label class="form-label fw-semibold">Full Name *</label><input id="opd-name" class="form-control" required></div>
+            <div class="col-md-6"><label class="form-label fw-semibold">Father's / Husband's Name</label><input id="opd-fhname" class="form-control"></div>
+            <div class="col-md-3"><label class="form-label fw-semibold">Date of Birth</label><input type="date" id="opd-dob" class="form-control"></div>
+            <div class="col-md-2"><label class="form-label fw-semibold">Age</label><input type="number" id="opd-age" class="form-control" min="0" max="150"></div>
+            <div class="col-md-3"><label class="form-label fw-semibold">Gender</label>
+              <select id="opd-gender" class="form-select"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+            <div class="col-md-4"><label class="form-label fw-semibold">Blood Group</label>
+              <select id="opd-blood" class="form-select"><option value="">Select</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select></div>
+            <div class="col-md-4"><label class="form-label fw-semibold">Marital Status</label>
+              <select id="opd-marital" class="form-select"><option value="">Select</option><option>Single</option><option>Married</option><option>Divorced</option><option>Widowed</option></select></div>
+            <div class="col-md-4"><label class="form-label fw-semibold">Mobile No. *</label><input id="opd-mobile" class="form-control" required></div>
+            <div class="col-md-4"><label class="form-label fw-semibold">Alternate No.</label><input id="opd-altmobile" class="form-control"></div>
+            <div class="col-md-4"><label class="form-label fw-semibold">Email</label><input type="email" id="opd-email" class="form-control"></div>
+            <div class="col-md-12"><label class="form-label fw-semibold">Address</label><input id="opd-address" class="form-control"></div>
+            <div class="col-md-4"><label class="form-label fw-semibold">City</label><input id="opd-city" class="form-control"></div>
+            <div class="col-md-4"><label class="form-label fw-semibold">State</label><input id="opd-state" class="form-control"></div>
+            <div class="col-md-4"><label class="form-label fw-semibold">Pin Code</label><input id="opd-pin" class="form-control"></div>
+          </div>
+        </div>
+
+        <!-- 2. Consultant / Doctor Details -->
+        <div class="p-3 mb-3 rounded-3" style="background:#f0fff4;border-left:4px solid #198754">
+          <h6 class="fw-bold text-success mb-3"><i class="bi bi-hospital-fill me-2"></i>2. Consultant / Doctor Details</h6>
+          <div class="row g-3">
+            <div class="col-md-4"><label class="form-label fw-semibold">Department</label><input id="opd-dept" class="form-control"></div>
+            <div class="col-md-4"><label class="form-label fw-semibold">Consultant Doctor *</label>
+              <select id="opd-doctor" class="form-select" required>
+                <option value="">Select Doctor</option>
+                ${docs.map(d => `<option value="${d.id}">Dr. ${d.name} (${d.speciality || 'General'})</option>`).join('')}
+              </select></div>
+            <div class="col-md-4"><label class="form-label fw-semibold">Visit Type</label>
+              <select id="opd-visit" class="form-select"><option>OPD</option><option>Emergency</option><option>Follow-up</option></select></div>
+          </div>
+        </div>
+
+        <!-- 3. Consultation Fees & Payment -->
+        <div class="p-3 mb-3 rounded-3" style="background:#fff8f0;border-left:4px solid #fd7e14">
+          <h6 class="fw-bold text-warning mb-3"><i class="bi bi-credit-card-fill me-2"></i>3. Consultation Fees & Payment</h6>
+          <div class="row g-3">
+            <div class="col-md-3"><label class="form-label fw-semibold">Consultation Fee (₹)</label><input type="number" id="opd-cfee" class="form-control" value="0" oninput="calcTotal()"></div>
+            <div class="col-md-3"><label class="form-label fw-semibold">Registration Fee (₹)</label><input type="number" id="opd-rfee" class="form-control" value="0" oninput="calcTotal()"></div>
+            <div class="col-md-3"><label class="form-label fw-semibold">Total Amount (₹)</label><input type="number" id="opd-total" class="form-control bg-light" readonly></div>
+            <div class="col-md-3"><label class="form-label fw-semibold">Payment Mode</label>
+              <select id="opd-paymode" class="form-select"><option>Cash</option><option>UPI/Card</option><option>Insurance</option><option>Corporate</option><option>Free/Scheme</option></select></div>
+            <div class="col-md-3"><label class="form-label fw-semibold">Amount Paid (₹)</label><input type="number" id="opd-paid" class="form-control" value="0" oninput="calcBalance()"></div>
+            <div class="col-md-3"><label class="form-label fw-semibold">Balance (₹)</label><input type="number" id="opd-balance" class="form-control bg-light" readonly></div>
+          </div>
+        </div>
+
+        <!-- 4. Patient Vitals -->
+        <div class="p-3 mb-3 rounded-3" style="background:#fdf0ff;border-left:4px solid #6f42c1">
+          <h6 class="fw-bold mb-3" style="color:#6f42c1"><i class="bi bi-heart-pulse-fill me-2"></i>4. Patient Vitals</h6>
+          <div class="row g-3">
+            <div class="col-md-2"><label class="form-label fw-semibold">Height (cm)</label><input type="number" id="opd-height" class="form-control"></div>
+            <div class="col-md-2"><label class="form-label fw-semibold">Weight (kg)</label><input type="number" id="opd-weight" class="form-control"></div>
+            <div class="col-md-2"><label class="form-label fw-semibold">Temp (°C)</label><input type="number" id="opd-temp" class="form-control" step="0.1"></div>
+            <div class="col-md-2"><label class="form-label fw-semibold">Pulse (bpm)</label><input type="number" id="opd-pulse" class="form-control"></div>
+            <div class="col-md-2"><label class="form-label fw-semibold">BP Systolic</label><input type="number" id="opd-bps" class="form-control"></div>
+            <div class="col-md-2"><label class="form-label fw-semibold">BP Diastolic</label><input type="number" id="opd-bpd" class="form-control"></div>
+            <div class="col-md-2"><label class="form-label fw-semibold">SpO2 (%)</label><input type="number" id="opd-spo2" class="form-control" step="0.1"></div>
+            <div class="col-md-2"><label class="form-label fw-semibold">Resp. Rate</label><input type="number" id="opd-rr" class="form-control"></div>
+          </div>
+        </div>
+
+        <!-- 5. Chief Complaint -->
+        <div class="p-3 mb-3 rounded-3" style="background:#fff0f3;border-left:4px solid #dc3545">
+          <h6 class="fw-bold text-danger mb-3"><i class="bi bi-stethoscope me-2"></i>5. Chief Complaint</h6>
+          <div class="row g-3">
+            <div class="col-md-6"><label class="form-label fw-semibold">Chief Complaint *</label><textarea id="opd-complaint" class="form-control" rows="2" required></textarea></div>
+            <div class="col-md-6"><label class="form-label fw-semibold">Symptoms</label><textarea id="opd-symptoms" class="form-control" rows="2"></textarea></div>
+          </div>
+        </div>
+
+        <!-- 6. Previous Medical History -->
+        <div class="p-3 mb-3 rounded-3" style="background:#f8f9fa;border-left:4px solid #6c757d">
+          <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-journal-medical me-2"></i>6. Previous Medical History</h6>
+          <div class="row g-3">
+            <div class="col-12">
+              <div class="d-flex flex-wrap gap-4">
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="opd-diabetes"><label class="form-check-label" for="opd-diabetes">Diabetes</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="opd-htn"><label class="form-check-label" for="opd-htn">Hypertension</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="opd-heart"><label class="form-check-label" for="opd-heart">Heart Disease</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="opd-asthma"><label class="form-check-label" for="opd-asthma">Asthma</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="opd-thyroid"><label class="form-check-label" for="opd-thyroid">Thyroid</label></div>
+              </div>
+            </div>
+            <div class="col-md-6"><label class="form-label fw-semibold">Previous Surgeries</label><input id="opd-surgeries" class="form-control"></div>
+            <div class="col-md-6"><label class="form-label fw-semibold">Past Hospitalization</label><input id="opd-hosp" class="form-control"></div>
+          </div>
+        </div>
+
+        <!-- 7. Medication & Allergies -->
+        <div class="p-3 mb-3 rounded-3" style="background:#f0fff4;border-left:4px solid #20c997">
+          <h6 class="fw-bold mb-3" style="color:#20c997"><i class="bi bi-capsule me-2"></i>7. Medication & Allergies</h6>
+          <div class="row g-3">
+            <div class="col-md-4"><label class="form-label fw-semibold">Current Medications</label><input id="opd-meds" class="form-control"></div>
+            <div class="col-md-4"><label class="form-label fw-semibold">Drug Allergies</label><input id="opd-drugallergy" class="form-control"></div>
+            <div class="col-md-4"><label class="form-label fw-semibold">Food Allergies</label><input id="opd-foodallergy" class="form-control"></div>
+          </div>
+        </div>
+
+        <!-- 8. Additional Information -->
+        <div class="p-3 mb-3 rounded-3" style="background:#fff8f0;border-left:4px solid #ffc107">
+          <h6 class="fw-bold text-warning mb-3"><i class="bi bi-info-circle-fill me-2"></i>8. Additional Information</h6>
+          <div class="row g-3">
+            <div class="col-md-3"><label class="form-label fw-semibold">Occupation</label><input id="opd-occ" class="form-control"></div>
+            <div class="col-md-3"><label class="form-label fw-semibold">Emergency Contact Name</label><input id="opd-ecname" class="form-control"></div>
+            <div class="col-md-3"><label class="form-label fw-semibold">Relationship</label><input id="opd-ecrel" class="form-control"></div>
+            <div class="col-md-3"><label class="form-label fw-semibold">Emergency Phone</label><input id="opd-ecphone" class="form-control"></div>
+          </div>
+        </div>
+
+        <div class="d-flex gap-3 mt-3">
+          <button type="submit" class="btn btn-primary btn-lg px-5"><i class="bi bi-check-circle me-2"></i>Register Patient</button>
+          <button type="reset" class="btn btn-outline-secondary btn-lg px-4"><i class="bi bi-arrow-counterclockwise me-2"></i>Reset</button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- Success Modal -->
+  <div class="modal fade" id="opdSuccessModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-4 text-center p-4">
+        <div class="mb-3">
+          <i class="bi bi-check-circle-fill text-success" style="font-size:4rem"></i>
+        </div>
+        <h4 class="fw-bold">Registration Successful!</h4>
+        <p class="text-muted">Patient has been registered and forwarded to the doctor.</p>
+        <div class="d-flex justify-content-center gap-3 mb-3">
+          <div class="p-3 rounded-3 bg-light">
+            <div class="text-muted small">UHID</div>
+            <div class="fw-bold fs-5" id="success-uhid">-</div>
+          </div>
+          <div class="p-3 rounded-3 bg-light">
+            <div class="text-muted small">Token No.</div>
+            <div class="fw-bold fs-5" id="success-token">-</div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-center gap-2 flex-wrap">
+          <button class="btn btn-primary" onclick="bootstrap.Modal.getInstance(document.getElementById('opdSuccessModal')).hide();renderPage('rec-opd')">
+            <i class="bi bi-plus-circle me-1"></i>New Registration
+          </button>
+          <button class="btn btn-success" onclick="printOPDSlip(_lastOPDRec)">
+            <i class="bi bi-printer me-1"></i>Print Slip
+          </button>
+          <button class="btn btn-outline-secondary" onclick="bootstrap.Modal.getInstance(document.getElementById('opdSuccessModal')).hide();renderPage('rec-opd-list')">
+            <i class="bi bi-list-ul me-1"></i>View OPD List
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function calcTotal() {
+  const c = parseFloat(document.getElementById('opd-cfee').value) || 0;
+  const r = parseFloat(document.getElementById('opd-rfee').value) || 0;
+  document.getElementById('opd-total').value = c + r;
+  calcBalance();
+}
+
+function calcBalance() {
+  const total = parseFloat(document.getElementById('opd-total').value) || 0;
+  const paid = parseFloat(document.getElementById('opd-paid').value) || 0;
+  document.getElementById('opd-balance').value = total - paid;
+}
+
+async function submitOPD(e) {
+  e.preventDefault();
   try {
-    await apiFetch(`opd/${id}/consult`, {
-      method: 'PUT',
+    const data = await apiFetch('opd', {
+      method: 'POST',
       body: JSON.stringify({
-        diagnosis: document.getElementById('consult-diag').value,
-        prescription: document.getElementById('consult-rx').value,
-        notes: document.getElementById('consult-notes').value
+        fullname: document.getElementById('opd-name').value,
+        fatherhusbandname: document.getElementById('opd-fhname').value,
+        dob: document.getElementById('opd-dob').value,
+        age: document.getElementById('opd-age').value,
+        gender: document.getElementById('opd-gender').value,
+        bloodgroup: document.getElementById('opd-blood').value,
+        maritalstatus: document.getElementById('opd-marital').value,
+        mobile: document.getElementById('opd-mobile').value,
+        alternatemobile: document.getElementById('opd-altmobile').value,
+        email: document.getElementById('opd-email').value,
+        address: document.getElementById('opd-address').value,
+        city: document.getElementById('opd-city').value,
+        state: document.getElementById('opd-state').value,
+        pincode: document.getElementById('opd-pin').value,
+        department: document.getElementById('opd-dept').value,
+        doctorid: document.getElementById('opd-doctor').value,
+        visittype: document.getElementById('opd-visit').value,
+        consultationfee: document.getElementById('opd-cfee').value,
+        registrationfee: document.getElementById('opd-rfee').value,
+        totalamount: document.getElementById('opd-total').value,
+        paymentmode: document.getElementById('opd-paymode').value,
+        amountpaid: document.getElementById('opd-paid').value,
+        balance: document.getElementById('opd-balance').value,
+        height: document.getElementById('opd-height').value,
+        weight: document.getElementById('opd-weight').value,
+        temperature: document.getElementById('opd-temp').value,
+        pulserate: document.getElementById('opd-pulse').value,
+        bpsystolic: document.getElementById('opd-bps').value,
+        bpdiastolic: document.getElementById('opd-bpd').value,
+        spo2: document.getElementById('opd-spo2').value,
+        respiratoryrate: document.getElementById('opd-rr').value,
+        chiefcomplaint: document.getElementById('opd-complaint').value,
+        symptoms: document.getElementById('opd-symptoms').value,
+        diabetes: document.getElementById('opd-diabetes').checked,
+        hypertension: document.getElementById('opd-htn').checked,
+        heartdisease: document.getElementById('opd-heart').checked,
+        asthma: document.getElementById('opd-asthma').checked,
+        thyroid: document.getElementById('opd-thyroid').checked,
+        previoussurgeries: document.getElementById('opd-surgeries').value,
+        pasthospitalization: document.getElementById('opd-hosp').value,
+        currentmedications: document.getElementById('opd-meds').value,
+        drugallergies: document.getElementById('opd-drugallergy').value,
+        foodallergies: document.getElementById('opd-foodallergy').value,
+        occupation: document.getElementById('opd-occ').value,
+        emergencycontactname: document.getElementById('opd-ecname').value,
+        emergencycontactrelation: document.getElementById('opd-ecrel').value,
+        emergencycontactphone: document.getElementById('opd-ecphone').value
       })
     });
-    bootstrap.Modal.getInstance(document.getElementById('opdConsultModal')).hide();
-    toast('Consultation saved successfully!');
-    renderPage('doc-opd');
-  } catch(err){
-    toast('Failed to save consultation', 'error');
-  }
+    _lastOPDRec = data;
+    document.getElementById('success-uhid').textContent = data.uhid;
+    document.getElementById('success-token').textContent = data.token_no;
+    new bootstrap.Modal(document.getElementById('opdSuccessModal')).show();
+  } catch(e) { toast(e.message, 'error'); }
 }
 
-// Improved Print Functions (no more freezing / unresponsive)
-function printOPDSlip(o) {
-  if (!o) return toast("No OPD data", "error");
-  const win = window.open('', '_blank', 'width=900,height=700');
-  if (!win) return toast("Popup blocked", "error");
-  win.document.write(`<!DOCTYPE html><html><head><title>OPD Slip</title><style>body{font-family:Arial,sans-serif;margin:30px;font-size:13px}/* your original styles */</style></head><body>
-  <!-- Paste your original OPD slip HTML content here (same as before) -->
-  <script>window.onload=function(){window.print();setTimeout(()=>{window.close()},800);}</script></body></html>`);
-  win.document.close();
+async function recOPDList() {
+  const opds = await apiFetch('opd');
+  return `
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <input class="form-control w-25" placeholder="Search..." oninput="filterTable(this,'opd-tbl')">
+    <button class="btn btn-primary" onclick="renderPage('rec-opd')"><i class="bi bi-plus-lg me-1"></i>New OPD</button>
+  </div>
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-0">
+      <table class="table hms-table mb-0 align-middle" id="opd-tbl">
+        <thead><tr><th>UHID</th><th>Patient</th><th>Mobile</th><th>Doctor</th><th>Token</th><th>Visit</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>${opds.length ? opds.map(o => `<tr>
+          <td><span class="badge bg-light text-dark border">${o.uhid}</span></td>
+          <td>${o.full_name}</td>
+          <td>${o.mobile || '-'}</td>
+          <td>${o.doctor_name || '-'}</td>
+          <td><span class="badge bg-primary">${o.token_no}</span></td>
+          <td>${o.visit_type}</td>
+          <td><span class="badge bg-${o.status==='Waiting'?'warning text-dark':o.status==='Completed'?'success':o.status==='With Doctor'?'info':'secondary'}">${o.status}</span></td>
+          <td>${o.reg_date?.split('T')[0] || o.reg_date}</td>
+        </tr>`).join('') : '<tr><td colspan="8" class="text-center text-muted py-3">No OPD records found</td></tr>'}</tbody>
+      </table>
+    </div>
+  </div>`;
 }
 
-function printConsultSlip() {
-  const o = _currentConsultOPD;
-  if (!o) return toast("No consultation data", "error");
-  const win = window.open('', '_blank', 'width=900,height=700');
-  if (!win) return toast("Popup blocked", "error");
-  win.document.write(`<!DOCTYPE html><html><head><title>Prescription</title><style>/* your original styles */</style></head><body>
-  <!-- Paste your original consult slip HTML content here -->
-  <script>window.onload=function(){window.print();setTimeout(()=>{window.close()},800);}</script></body></html>`);
-  win.document.close();
+async function adminOPD() {
+  const opds = await apiFetch('opd');
+  return `
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <input class="form-control w-25" placeholder="Search..." oninput="filterTable(this,'admin-opd-tbl')">
+    <select class="form-select" style="width:160px" onchange="filterStatus(this,'admin-opd-tbl')">
+      <option value="">All Status</option>
+      <option>Waiting</option><option>With Doctor</option><option>Completed</option><option>Cancelled</option>
+    </select>
+  </div>
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-0">
+      <table class="table hms-table mb-0 align-middle" id="admin-opd-tbl">
+        <thead><tr><th>UHID</th><th>Patient</th><th>Mobile</th><th>Doctor</th><th>Token</th><th>Complaint</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>${opds.length ? opds.map(o => `<tr>
+          <td><span class="badge bg-light text-dark border">${o.uhid}</span></td>
+          <td>${o.full_name}</td>
+          <td>${o.mobile || '-'}</td>
+          <td>${o.doctor_name || '-'}</td>
+          <td><span class="badge bg-primary">${o.token_no}</span></td>
+          <td>${o.chief_complaint?.substring(0,30) || '-'}</td>
+          <td><span class="badge bg-${o.status==='Waiting'?'warning text-dark':o.status==='Completed'?'success':o.status==='With Doctor'?'info':'secondary'}">${o.status}</span></td>
+          <td>
+            <select class="form-select form-select-sm" style="width:140px" onchange="updateOPDStatus(${o.id},this.value)">
+              <option ${o.status==='Waiting'?'selected':''}>Waiting</option>
+              <option ${o.status==='With Doctor'?'selected':''}>With Doctor</option>
+              <option ${o.status==='Completed'?'selected':''}>Completed</option>
+              <option ${o.status==='Cancelled'?'selected':''}>Cancelled</option>
+            </select>
+          </td>
+        </tr>`).join('') : '<tr><td colspan="8" class="text-center text-muted py-3">No OPD records</td></tr>'}</tbody>
+      </table>
+    </div>
+  </div>`;
 }
 
-// Keep your other helper functions (opdConsultModal, filterTable, etc.)
+async function docOPD() {
+  const opds = await apiFetch('opd/doctor');
+  const rows = opds.map(o => `
+    <tr>
+      <td><strong>${o.full_name}</strong><br><small class="text-muted">UHID: ${o.uhid} | Token: ${o.token_no}</small></td>
+      <td>${o.age||'-'} / ${o.gender||'-'}</td>
+      <td>${o.mobile||'-'}</td>
+      <td>${o.chief_complaint||'-'}</td>
+      <td><span class="badge ${o.status==='Consulted'?'bg-success':'bg-warning text-dark'}">${o.status||'Pending'}</span></td>
+      <td>
+        <button class="btn btn-sm btn-primary me-1" onclick="opdConsultModal(${o.id})">
+          <i class="bi bi-pencil-square"></i> Consult
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="printOPDSlipById(${o.id})">
+          <i class="bi bi-printer"></i> Slip
+        </button>
+      </td>
+    </tr>`).join('');
+  return `
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-header bg-white fw-semibold border-0 pt-3">OPD Patients</div>
+      <div class="card-body p-0">
+        <table class="table hms-table mb-0 align-middle">
+          <thead><tr><th>Patient</th><th>Age/Sex</th><th>Mobile</th><th>Complaint</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody>${rows||'<tr><td colspan="6" class="text-center text-muted py-3">No OPD patients assigned</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Consult Modal -->
+    <div class="modal fade" id="opdConsultModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <form class="modal-content rounded-4" onsubmit="saveConsult(event)">
+          <div class="modal-header">
+            <h5 class="modal-title">OPD Consultation</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="consult-id">
+            <div id="consult-patient-info" class="alert alert-info p-2 mb-3 small"></div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Diagnosis</label>
+              <textarea id="consult-diag" class="form-control" rows="2" required></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Prescription / Medicines</label>
+              <textarea id="consult-rx" class="form-control" rows="4" placeholder="1. Tab Paracetamol 500mg - 1x3 days&#10;2. Tab Amoxicillin 500mg - 1x5 days"></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Notes / Advice</label>
+              <textarea id="consult-notes" class="form-control" rows="2" placeholder="Rest for 2 days, drink plenty of water..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" onclick="printConsultSlip()"><i class="bi bi-printer me-1"></i>Print Slip</button>
+            <button type="submit" class="btn btn-success"><i class="bi bi-check-circle me-1"></i>Save & Close</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
+}
+
+async function updateOPDStatus(id, status) {
+  await apiFetch(`opd/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) });
+  toast(`Status updated to ${status}`);
+}
+async function patRx(){
+  const rxs=await apiFetch('prescriptions/mine');
+  return `<div class="card border-0 shadow-sm rounded-4"><div class="card-header bg-white fw-semibold border-0 pt-3">My Prescriptions</div>
+    <div class="card-body">${rxs.length?rxs.map(rx=>`<div class="rx-card p-3 mb-3"><div class="d-flex justify-content-between"><b>${rx.doctor_name}</b><small class="text-muted">${rx.created_at?.split('T')[0]}</small></div><div class="mt-1"><b>Dx:</b> ${rx.diagnosis}</div><div class="mt-1"><b>Medicines:</b><pre class="mb-0 small" style="font-family:inherit">${rx.medicines}</pre></div>${rx.notes?`<div class="text-muted small mt-1">${rx.notes}</div>`:''}</div>`).join(''):'<p class="text-muted text-center py-3">No prescriptions found.</p>'}
+    </div></div>`;
+}
+async function uploadReport(e,role){
+  e.preventDefault();
+  const fd=new FormData();
+  fd.append('patient_id',document.getElementById('rpt-patient').value);
+  fd.append('test',document.getElementById('rpt-test').value);
+  fd.append('date',document.getElementById('rpt-date').value);
+  fd.append('file',document.getElementById('rpt-file').files[0]);
+  const r=await fetch(API+'reports/upload',{method:'POST',headers:{Authorization:'Bearer '+session.token},body:fd});
+  const d=await r.json();
+  if(!r.ok){toast(d.error,'error');return;}
+  toast('Report uploaded successfully!');
+  renderPage(role==='doctor'?'doc-reports':'admin-reports');
+}
+function downloadReport(id){
+  window.open(API+'reports/'+id+'/download?token='+session.token,'_blank');
+}
+async function deleteReport(id){if(!confirm('Delete this report?'))return;await apiFetch('reports/'+id,{method:'DELETE'});toast('Report deleted','error');renderPage('admin-reports');}
+function apptTableDoc(list){if(!list.length)return'<p class="text-center py-3 text-muted">No appointments.</p>';return`<table class="table hms-table mb-0 align-middle"><thead><tr><th>Patient</th><th>Date</th><th>Time</th><th>Reason</th><th>Status</th></tr></thead><tbody>${list.map(a=>`<tr><td>${a.patient_name}</td><td>${a.date}</td><td>${a.time}</td><td>${a.reason||'-'}</td><td><span class="badge ${statusBadge(a.status)}">${a.status}</span></td></tr>`).join('')}</tbody></table>`;}
+function statusBadge(s){return s==='Confirmed'?'bg-success':s==='Pending'?'bg-warning text-dark':s==='Completed'?'bg-info text-dark':'bg-danger';}
+function filterTable(input,tableId){const val=input.value.toLowerCase();document.querySelectorAll('#'+tableId+' tbody tr').forEach(tr=>tr.style.display=tr.textContent.toLowerCase().includes(val)?'':'none');}
+function filterStatus(sel,tableId){const val=sel.value;document.querySelectorAll('#'+tableId+' tbody tr').forEach(tr=>tr.style.display=!val||tr.textContent.includes(val)?'':'none');}
+function filterDate(input,tableId){const val=input.value;document.querySelectorAll('#'+tableId+' tbody tr').forEach(tr=>tr.style.display=!val||tr.textContent.includes(val)?'':'none');}
+window.onload=()=>{if(session?.token&&session?.user){currentRole=session.user.role;launchApp();}}
+let _currentConsultOPD = null;
+
 async function opdConsultModal(id) {
   const o = await apiFetch('opd/' + id);
   _currentConsultOPD = o;
   document.getElementById('consult-id').value = o.id;
-  document.getElementById('consult-patient-info').innerHTML = `<b>${o.full_name}</b> | Age: ${o.age||'-'} | Sex: ${o.gender||'-'} | UHID: <b>${o.uhid}</b> | Token: <b>${o.token_no}</b><br>Complaint: ${o.chief_complaint||'-'} | BP: ${o.bp_systolic||'-'}/${o.bp_diastolic||'-'} | Temp: ${o.temperature||'-'} | SpO2: ${o.spo2||'-'}%`;
+  document.getElementById('consult-patient-info').innerHTML =
+    `<b>${o.full_name}</b> | Age: ${o.age||'-'} | Sex: ${o.gender||'-'} | UHID: <b>${o.uhid}</b> | Token: <b>${o.token_no}</b><br>
+     Complaint: ${o.chief_complaint||'-'} | BP: ${o.bp_systolic||'-'}/${o.bp_diastolic||'-'} | Temp: ${o.temperature||'-'} | SpO2: ${o.spo2||'-'}%`;
   document.getElementById('consult-diag').value = o.diagnosis||'';
   document.getElementById('consult-rx').value = o.prescription||'';
   document.getElementById('consult-notes').value = o.notes||'';
   new bootstrap.Modal(document.getElementById('opdConsultModal')).show();
 }
 
-function filterTable(input,tableId){
-  const val=input.value.toLowerCase();
-  document.querySelectorAll('#'+tableId+' tbody tr').forEach(tr=>tr.style.display=tr.textContent.toLowerCase().includes(val)?'':'none');
+async function printOPDSlipById(id) {
+  const o = await apiFetch('opd/' + id);
+  printOPDSlip(o);
 }
 
-// Keep all your other functions (adminDash, docOPD, etc.) as they were - just make sure apiFetch is used inside them.
+async function saveConsult(e) {
+  e.preventDefault();
+  const id = document.getElementById('consult-id').value;
+  await apiFetch(`opd/${id}/consult`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      diagnosis: document.getElementById('consult-diag').value,
+      prescription: document.getElementById('consult-rx').value,
+      notes: document.getElementById('consult-notes').value
+    })
+  });
+  bootstrap.Modal.getInstance(document.getElementById('opdConsultModal')).hide();
+  toast('Consultation saved!');
+  renderPage('doc-opd');
+}
 
-window.onload=()=>{if(session?.token&&session?.user){currentRole=session.user.role;launchApp();}}
+function printConsultSlip() {
+  const o = _currentConsultOPD;
+  const diag = document.getElementById('consult-diag').value;
+  const rx   = document.getElementById('consult-rx').value;
+  const notes= document.getElementById('consult-notes').value;
+  const win = window.open('','_blank','width=800,height=900');
+  win.document.write(`<!DOCTYPE html><html><head><title>Prescription</title>
+  <style>
+    body{font-family:Arial,sans-serif;margin:0;padding:20px;font-size:13px}
+    .header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #0d6efd;padding-bottom:10px;margin-bottom:10px}
+    .hospital-name{font-size:22px;font-weight:700;color:#0d6efd}
+    .hospital-name span{color:#198754}
+    .doctor-info{text-align:right;font-size:12px}
+    .patient-box{background:#f0f4ff;border:1px solid #cde;border-radius:8px;padding:10px;margin-bottom:12px}
+    .patient-box table{width:100%}
+    .patient-box td{padding:2px 8px;font-size:12px}
+    .section-title{font-weight:700;color:#0d6efd;border-bottom:1px solid #cde;margin:10px 0 6px;padding-bottom:3px;font-size:13px}
+    .rx-symbol{font-size:28px;font-weight:700;color:#0d6efd;margin-right:8px}
+    pre{font-family:Arial,sans-serif;white-space:pre-wrap;margin:0;font-size:13px}
+    .footer{margin-top:30px;border-top:1px solid #ccc;padding-top:10px;display:flex;justify-content:space-between;font-size:11px;color:#666}
+    .sign-box{text-align:right;margin-top:40px}
+    @media print{body{margin:0}}
+  </style></head><body>
+  <div class="header">
+    <div>
+      <div class="hospital-name">Medi<span>Care</span> HMS</div>
+      <div style="font-size:11px;color:#666">Super Speciality Hospital</div>
+    </div>
+    <div class="doctor-info">
+      <b>Dr. ${o.doctor_name||'Doctor'}</b><br>
+      ${o.speciality||'General Physician'}<br>
+      Date: ${new Date().toLocaleDateString('en-IN')}&nbsp;&nbsp;Time: ${new Date().toLocaleTimeString('en-IN')}
+    </div>
+  </div>
+  <div class="patient-box">
+    <table>
+      <tr>
+        <td><b>Patient:</b> ${o.full_name}</td>
+        <td><b>UHID:</b> ${o.uhid}</td>
+        <td><b>Token:</b> ${o.token_no}</td>
+      </tr>
+      <tr>
+        <td><b>Age/Sex:</b> ${o.age||'-'} yrs / ${o.gender||'-'}</td>
+        <td><b>Mobile:</b> ${o.mobile||'-'}</td>
+        <td><b>Blood:</b> ${o.blood_group||'-'}</td>
+      </tr>
+      <tr>
+        <td><b>BP:</b> ${o.bp_systolic||'-'}/${o.bp_diastolic||'-'} mmHg</td>
+        <td><b>Temp:</b> ${o.temperature||'-'} °F</td>
+        <td><b>SpO2:</b> ${o.spo2||'-'}%&nbsp;&nbsp;<b>Pulse:</b> ${o.pulse_rate||'-'}/min</td>
+      </tr>
+      <tr><td colspan="3"><b>Complaint:</b> ${o.chief_complaint||'-'}</td></tr>
+    </table>
+  </div>
+  <div class="section-title">Diagnosis</div>
+  <p style="margin:0 0 10px">${diag||'-'}</p>
+  <div class="section-title"><span class="rx-symbol">℞</span> Medicines Advised</div>
+  <pre>${rx||'-'}</pre>
+  ${notes?`<div class="section-title">Advice / Notes</div><p style="margin:0">${notes}</p>`:''}
+  <div class="sign-box">
+    <div style="border-top:1px solid #000;display:inline-block;padding-top:4px;min-width:150px;text-align:center">
+      <b>Dr. ${o.doctor_name||'Doctor'}</b><br>
+      <small>${o.speciality||''}</small>
+    </div>
+  </div>
+  <div class="footer">
+    <span>MediCare HMS — Prescription</span>
+    <span>This is a computer generated prescription</span>
+  </div>
+  <script>window.onload=()=>{window.print();}<\/script>
+  </body></html>`);
+  win.document.close();
+}
+
+function printOPDSlip(o) {
+  const win = window.open('','_blank','width=800,height=900');
+  win.document.write(`<!DOCTYPE html><html><head><title>OPD Registration Slip</title>
+  <style>
+    body{font-family:Arial,sans-serif;margin:0;padding:20px;font-size:13px}
+    .header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #0d6efd;padding-bottom:10px;margin-bottom:12px}
+    .hospital-name{font-size:22px;font-weight:700;color:#0d6efd}
+    .hospital-name span{color:#198754}
+    .token-box{background:#0d6efd;color:#fff;border-radius:10px;padding:10px 20px;text-align:center}
+    .token-box .t-label{font-size:11px;opacity:.85}
+    .token-box .t-no{font-size:28px;font-weight:700}
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;background:#f8faff;border:1px solid #dde;border-radius:8px;padding:10px;margin-bottom:10px}
+    .info-grid div{font-size:12px;padding:2px 0}
+    .info-grid b{color:#333}
+    .section-title{font-weight:700;color:#0d6efd;border-bottom:1px solid #cde;margin:10px 0 6px;padding-bottom:3px;font-size:12px;text-transform:uppercase}
+    .vitals-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+    .vital{background:#fff;border:1px solid #dde;border-radius:6px;padding:4px 10px;font-size:12px;text-align:center}
+    .vital b{display:block;font-size:15px;color:#0d6efd}
+    .footer{margin-top:20px;border-top:1px solid #ccc;padding-top:8px;display:flex;justify-content:space-between;font-size:11px;color:#666}
+    @media print{body{margin:0}}
+  </style></head><body>
+  <div class="header">
+    <div>
+      <div class="hospital-name">Medi<span>Care</span> HMS</div>
+      <div style="font-size:11px;color:#555">OPD Registration Slip</div>
+      <div style="font-size:11px;color:#555">Date: ${o.reg_date||new Date().toLocaleDateString('en-IN')} &nbsp; Time: ${o.reg_time||new Date().toLocaleTimeString('en-IN')}</div>
+    </div>
+    <div class="token-box">
+      <div class="t-label">TOKEN NO</div>
+      <div class="t-no">${o.token_no}</div>
+      <div class="t-label">UHID: ${o.uhid}</div>
+    </div>
+  </div>
+  <div class="section-title">Patient Information</div>
+  <div class="info-grid">
+    <div><b>Name:</b> ${o.full_name}</div>
+    <div><b>Age/Sex:</b> ${o.age||'-'} yrs / ${o.gender||'-'}</div>
+    <div><b>Mobile:</b> ${o.mobile||'-'}</div>
+    <div><b>Blood Group:</b> ${o.blood_group||'-'}</div>
+    <div><b>Department:</b> ${o.department||'-'}</div>
+    <div><b>Doctor:</b> ${o.doctor_name||'-'}</div>
+    <div><b>Visit Type:</b> ${o.visit_type||'OPD'}</div>
+    <div><b>Marital Status:</b> ${o.marital_status||'-'}</div>
+    <div><b>Address:</b> ${o.address||'-'}, ${o.city||''}</div>
+    <div><b>Emergency Contact:</b> ${o.emergency_contact_name||'-'} (${o.emergency_contact_phone||'-'})</div>
+  </div>
+  <div class="section-title">Vitals</div>
+  <div class="vitals-row">
+    <div class="vital"><b>${o.bp_systolic||'-'}/${o.bp_diastolic||'-'}</b>BP (mmHg)</div>
+    <div class="vital"><b>${o.temperature||'-'}</b>Temp (°F)</div>
+    <div class="vital"><b>${o.spo2||'-'}%</b>SpO2</div>
+    <div class="vital"><b>${o.pulse_rate||'-'}</b>Pulse/min</div>
+    <div class="vital"><b>${o.weight||'-'} kg</b>Weight</div>
+    <div class="vital"><b>${o.height||'-'} cm</b>Height</div>
+  </div>
+  <div class="section-title">Chief Complaint</div>
+  <p style="margin:0 0 8px">${o.chief_complaint||'-'}</p>
+  <div class="section-title">Payment</div>
+  <div class="info-grid">
+    <div><b>Consultation Fee:</b> ₹${o.consultation_fee||0}</div>
+    <div><b>Registration Fee:</b> ₹${o.registration_fee||0}</div>
+    <div><b>Total Amount:</b> ₹${o.total_amount||0}</div>
+    <div><b>Payment Mode:</b> ${o.payment_mode||'Cash'}</div>
+    <div><b>Amount Paid:</b> ₹${o.amount_paid||0}</div>
+    <div><b>Balance:</b> ₹${o.balance||0}</div>
+  </div>
+  <div class="footer">
+    <span>MediCare HMS — OPD Registration</span>
+    <span>Computer Generated Slip — No Signature Required</span>
+  </div>
+  <script>window.onload=()=>{window.print();}<\/script>
+  </body></html>`);
+  win.document.close();
+}
 </script>
 </body>
 </html>
