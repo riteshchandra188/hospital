@@ -255,8 +255,13 @@ app.put('/api/opd/:id/consult', auth, async (req, res) => {
   try {
     const { diagnosis, prescription, notes } = req.body;
     await pool.query(
-      'UPDATE opd_registrations SET diagnosis=?, prescription=?, notes=?, status="Consulted" WHERE id=?',
+      'UPDATE opd_registrations SET diagnosis=?, prescription=?, notes=? WHERE id=?',
       [diagnosis||null, prescription||null, notes||null, req.params.id]
+    );
+    // Update status separately using the allowed value
+    await pool.query(
+      "UPDATE opd_registrations SET status='Consulted' WHERE id=?",
+      [req.params.id]
     );
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
