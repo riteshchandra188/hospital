@@ -48,11 +48,7 @@ app.post('/api/admin/login', async (req, res) => {
     if (admin.status !== 'Active') return res.status(403).json({ error: 'Admin account is inactive' });
     const ok = await bcrypt.compare(password, admin.password);
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
-    const token = jwt.sign(
-      { id: admin.id, role: 'admin', name: admin.name },
-      JWT_SECRET,
-      { expiresIn: '8h' }
-    );
+    const token = jwt.sign({ id: admin.id, role: 'admin', name: admin.name }, JWT_SECRET, { expiresIn: '8h' });
     res.json({ token, user: { id: admin.id, role: 'admin', name: admin.name, email: admin.email } });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -132,9 +128,8 @@ app.delete('/api/doctors/:id', auth, async (req, res) => {
   try { await pool.query('DELETE FROM doctors WHERE id=?', [req.params.id]); res.json({ ok: true }); }
   catch (e) { res.status(500).json({ error: e.message }); }
 });
-// ─── Receptionists ───────────────────────────────────────────
 
-// Receptionist login
+// ─── Receptionists ───────────────────────────────────────────
 app.post('/api/receptionist/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -148,50 +143,36 @@ app.post('/api/receptionist/login', async (req, res) => {
     res.json({ token, user: { id: rec.id, role: 'receptionist', name: rec.name, email: rec.email } });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-
-// Get all receptionists (Admin)
 app.get('/api/receptionists', auth, async (req, res) => {
   try {
     const [r] = await pool.query('SELECT id, name, email, phone, status, created_at FROM receptionists');
     res.json(r);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-
-// Add receptionist (Admin)
 app.post('/api/receptionists', auth, async (req, res) => {
   try {
     const { name, email, password, phone } = req.body;
     const hash = await bcrypt.hash(password, 10);
-    await pool.query(
-      'INSERT INTO receptionists (name, email, password, phone) VALUES (?,?,?,?)',
-      [name, email, hash, phone||null]
-    );
+    await pool.query('INSERT INTO receptionists (name, email, password, phone) VALUES (?,?,?,?)', [name, email, hash, phone||null]);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-
-// Update receptionist (Admin)
 app.put('/api/receptionists/:id', auth, async (req, res) => {
   try {
     const { name, email, phone, status } = req.body;
-    await pool.query(
-      'UPDATE receptionists SET name=?, email=?, phone=?, status=? WHERE id=?',
-      [name, email, phone||null, status, req.params.id]
-    );
+    await pool.query('UPDATE receptionists SET name=?, email=?, phone=?, status=? WHERE id=?', [name, email, phone||null, status, req.params.id]);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-
-// Delete receptionist (Admin)
 app.delete('/api/receptionists/:id', auth, async (req, res) => {
   try {
     await pool.query('DELETE FROM receptionists WHERE id=?', [req.params.id]);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-// ─── OPD Registrations ───────────────────────────────────────
 
-// Create OPD registration
+// ─── OPD Registrations ───────────────────────────────────────
+// Create OPD
 app.post('/api/opd', auth, async (req, res) => {
   try {
     const uhid = 'UHID' + Date.now().toString().slice(-8);
@@ -208,10 +189,8 @@ app.post('/api/opd', auth, async (req, res) => {
       drug_allergies, food_allergies, occupation,
       emergencycontactname, emergencycontactrelation, emergencycontactphone
     } = req.body;
-
     const reg_date = new Date().toISOString().split('T')[0];
     const reg_time = new Date().toTimeString().split(' ')[0];
-
     const [r] = await pool.query(`INSERT INTO opd_registrations (
       uhid,reg_date,reg_time,full_name,father_husband_name,dob,age,gender,blood_group,marital_status,
       mobile,alternate_mobile,email,address,city,state,pin_code,
@@ -234,11 +213,11 @@ app.post('/api/opd', auth, async (req, res) => {
      drug_allergies||null, food_allergies||null, occupation||null,
      emergencycontactname||null, emergencycontactrelation||null, emergencycontactphone||null,
      req.user.id]);
-
     res.json({ ok: true, uhid, token_no, id: r.insertId });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-// Get ALL OPD registrations (Admin + Receptionist)
+
+// Get ALL OPD (Receptionist + Admin)
 app.get('/api/opd', auth, async (req, res) => {
   try {
     const [r] = await pool.query(
@@ -250,15 +229,28 @@ app.get('/api/opd', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Update OPD status
+// Get OPD by doctor — BEFORE :id
+app.get('/api/opd/doctor', auth, async (req, res) => {
+  try {
+    const [r] = await pool.query(
+      `SELECT o.*, d.name as doctor_name, d.speciality
+       FROM opd_registrations o
+       LEFT JOIN doctors d ON o.doctor_id = d.id
+       WHERE o.doctor_id = ? ORDER BY o.created_at DESC`,
+      [req.user.id]);
+    res.json(r);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Update status — BEFORE :id
 app.put('/api/opd/:id/status', auth, async (req, res) => {
   try {
-    await pool.query('UPDATE opd_registrations SET status = ? WHERE id = ?',
-      [req.body.status, req.params.id]);
+    await pool.query('UPDATE opd_registrations SET status = ? WHERE id = ?', [req.body.status, req.params.id]);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-// Save diagnosis, prescription, notes on OPD by doctor
+
+// Save consult — BEFORE :id
 app.put('/api/opd/:id/consult', auth, async (req, res) => {
   try {
     const { diagnosis, prescription, notes } = req.body;
@@ -270,7 +262,7 @@ app.put('/api/opd/:id/consult', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Get single OPD
+// Get single OPD — LAST
 app.get('/api/opd/:id', auth, async (req, res) => {
   try {
     const [[r]] = await pool.query(
@@ -279,20 +271,7 @@ app.get('/api/opd/:id', auth, async (req, res) => {
     res.json(r);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-// ─── Receptionist OPD List ───────────────────────────────────────
-app.get('/api/opd/receptionist', auth, async (req, res) => {
-  try {
-    const [r] = await pool.query(`
-      SELECT o.*, d.name as doctor_name 
-      FROM opd_registrations o 
-      LEFT JOIN doctors d ON o.doctor_id = d.id 
-      ORDER BY o.created_at DESC
-    `);
-    res.json(r);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
+
 // Patients
 app.get('/api/patients', auth, async (req, res) => {
   try { const [r] = await pool.query('SELECT id,name,age,blood_group,phone,email,status FROM patients'); res.json(r); }
@@ -329,10 +308,7 @@ app.get('/api/appointments/mine', auth, async (req, res) => {
 app.post('/api/appointments', auth, async (req, res) => {
   try {
     const { doctor_id, date, time, reason } = req.body;
-    await pool.query(
-      'INSERT INTO appointments (patient_id,doctor_id,date,time,reason) VALUES (?,?,?,?,?)',
-      [req.user.id, doctor_id, date, time, reason]
-    );
+    await pool.query('INSERT INTO appointments (patient_id,doctor_id,date,time,reason) VALUES (?,?,?,?,?)', [req.user.id, doctor_id, date, time, reason]);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -365,10 +341,7 @@ app.get('/api/prescriptions/mine', auth, async (req, res) => {
 app.post('/api/prescriptions', auth, async (req, res) => {
   try {
     const { patient_id, diagnosis, medicines, notes } = req.body;
-    await pool.query(
-      'INSERT INTO prescriptions (doctor_id,patient_id,diagnosis,medicines,notes) VALUES (?,?,?,?,?)',
-      [req.user.id, patient_id, diagnosis, medicines, notes]
-    );
+    await pool.query('INSERT INTO prescriptions (doctor_id,patient_id,diagnosis,medicines,notes) VALUES (?,?,?,?,?)', [req.user.id, patient_id, diagnosis, medicines, notes]);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -376,9 +349,7 @@ app.post('/api/prescriptions', auth, async (req, res) => {
 // Billing
 app.get('/api/billing', auth, async (req, res) => {
   try {
-    const [r] = await pool.query(
-      'SELECT b.*,p.name as patient_name FROM billing b JOIN patients p ON b.patient_id=p.id ORDER BY b.date DESC'
-    );
+    const [r] = await pool.query('SELECT b.*,p.name as patient_name FROM billing b JOIN patients p ON b.patient_id=p.id ORDER BY b.date DESC');
     res.json(r);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -399,7 +370,7 @@ app.get('/api/setup', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Upload report
+// Reports
 app.post('/api/reports/upload', auth, upload.single('file'), async (req, res) => {
   try {
     const { patient_id, test, date } = req.body;
@@ -411,35 +382,22 @@ app.post('/api/reports/upload', auth, upload.single('file'), async (req, res) =>
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-
-// Get my reports (Patient)
 app.get('/api/reports/mine', auth, async (req, res) => {
   try {
-    const [r] = await pool.query(
-      'SELECT id,test,date,status,file_name,uploaded_by FROM reports WHERE patient_id=? ORDER BY date DESC',
-      [req.user.id]
-    );
+    const [r] = await pool.query('SELECT id,test,date,status,file_name,uploaded_by FROM reports WHERE patient_id=? ORDER BY date DESC', [req.user.id]);
     res.json(r);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-
-// Get all reports (Admin)
 app.get('/api/reports', auth, async (req, res) => {
   try {
-    const [r] = await pool.query(
-      'SELECT r.id,r.test,r.date,r.status,r.file_name,r.uploaded_by,p.name as patient_name FROM reports r JOIN patients p ON r.patient_id=p.id ORDER BY r.date DESC'
-    );
+    const [r] = await pool.query('SELECT r.id,r.test,r.date,r.status,r.file_name,r.uploaded_by,p.name as patient_name FROM reports r JOIN patients p ON r.patient_id=p.id ORDER BY r.date DESC');
     res.json(r);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-
-// Download report
 app.get('/api/reports/:id/download', async (req, res) => {
   try {
     let token = req.query.token;
-    if (!token && req.headers.authorization) {
-      token = req.headers.authorization.split(' ')[1];
-    }
+    if (!token && req.headers.authorization) token = req.headers.authorization.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'No token' });
     jwt.verify(token, JWT_SECRET);
     const [[report]] = await pool.query('SELECT * FROM reports WHERE id=?', [req.params.id]);
@@ -449,8 +407,6 @@ app.get('/api/reports/:id/download', async (req, res) => {
     res.send(report.file_data);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-
-// Delete report
 app.delete('/api/reports/:id', auth, async (req, res) => {
   try {
     await pool.query('DELETE FROM reports WHERE id=?', [req.params.id]);
