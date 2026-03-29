@@ -280,6 +280,20 @@ app.get('/api/opd/:id', auth, async (req, res) => {
     res.json(r);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
+// ─── Receptionist OPD List ───────────────────────────────────────
+app.get('/api/opd/receptionist', auth, async (req, res) => {
+  try {
+    const [r] = await pool.query(`
+      SELECT o.*, d.name as doctor_name 
+      FROM opd_registrations o 
+      LEFT JOIN doctors d ON o.doctor_id = d.id 
+      ORDER BY o.created_at DESC
+    `);
+    res.json(r);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 // Patients
 app.get('/api/patients', auth, async (req, res) => {
   try { const [r] = await pool.query('SELECT id,name,age,blood_group,phone,email,status FROM patients'); res.json(r); }
