@@ -238,15 +238,14 @@ app.post('/api/opd', auth, async (req, res) => {
     res.json({ ok: true, uhid, token_no, id: r.insertId });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-// Get OPD by doctor
-app.get('/api/opd/doctor', auth, async (req, res) => {
+// Get ALL OPD registrations (Admin + Receptionist)
+app.get('/api/opd', auth, async (req, res) => {
   try {
     const [r] = await pool.query(
-      `SELECT o.*, d.name as doctor_name, d.speciality 
-       FROM opd_registrations o 
-       LEFT JOIN doctors d ON o.doctor_id = d.id 
-       WHERE o.doctor_id = ? ORDER BY o.created_at DESC`,
-      [req.user.id]);
+      `SELECT o.*, d.name as doctor_name FROM opd_registrations o
+       LEFT JOIN doctors d ON o.doctor_id = d.id
+       ORDER BY o.created_at DESC`
+    );
     res.json(r);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
