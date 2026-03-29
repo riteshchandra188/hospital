@@ -1031,36 +1031,37 @@ async function adminOPD() {
   </div>`;
 }
 
+let opdListCache = [];
+
 async function docOPD() {
   const opds = await apiFetch('opd/doctor');
-  const rows = opds.map(o => `
-    <tr>
-      <td><strong>${o.full_name}</strong><br><small class="text-muted">UHID: ${o.uhid} | Token: ${o.token_no}</small></td>
-      <td>${o.age||'-'} / ${o.gender||'-'}</td>
-      <td>${o.mobile||'-'}</td>
-      <td>${o.chief_complaint||'-'}</td>
-      <td><span class="badge ${o.status==='Consulted'?'bg-success':'bg-warning text-dark'}">${o.status||'Pending'}</span></td>
-      <td>
-        <button class="btn btn-sm btn-primary me-1" onclick="opdConsultModal(${o.id})">
-          <i class="bi bi-pencil-square"></i> Consult
-        </button>
-        <button class="btn btn-sm btn-outline-secondary" onclick="printOPDSlipById(${o.id})">
-          <i class="bi bi-printer"></i> Slip
-        </button>
-      </td>
-    </tr>`).join('');
+  opdListCache = opds; // store globally
+  const rows = opds.map(o => `<tr>
+    <td><b>${o.full_name}</b><br><small class="text-muted">${o.uhid}</small></td>
+    <td>${o.reg_date}</td>
+    <td>${o.department||'-'}</td>
+    <td>${o.chief_complaint||'-'}</td>
+    <td><span class="badge ${o.status==='Consulted'?'bg-success':'bg-warning text-dark'}">${o.status||'Pending'}</span></td>
+    <td>
+      <button class="btn btn-sm btn-primary me-1" onclick="opdConsultModal(${o.id})">
+        <i class="bi bi-pencil-square"></i> Consult
+      </button>
+      <button class="btn btn-sm btn-outline-secondary" onclick="printSlipById(${o.id})">
+        <i class="bi bi-printer"></i> Slip
+      </button>
+    </td>
+  </tr>`).join('');
   return `
     <div class="card border-0 shadow-sm rounded-4">
-      <div class="card-header bg-white fw-semibold border-0 pt-3">OPD Patients</div>
+      <div class="card-header bg-white fw-semibold border-0 pt-3">My OPD Patients</div>
       <div class="card-body p-0">
         <table class="table hms-table mb-0 align-middle">
-          <thead><tr><th>Patient</th><th>Age/Sex</th><th>Mobile</th><th>Complaint</th><th>Status</th><th>Action</th></tr></thead>
-          <tbody>${rows||'<tr><td colspan="6" class="text-center text-muted py-3">No OPD patients assigned</td></tr>'}</tbody>
+          <thead><tr><th>Patient</th><th>Date</th><th>Dept</th><th>Complaint</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody>${rows}</tbody>
         </table>
       </div>
     </div>
-
-    <!-- Consult Modal -->
+    <!-- OPD Consult Modal -->
     <div class="modal fade" id="opdConsultModal" tabindex="-1">
       <div class="modal-dialog modal-lg">
         <form class="modal-content rounded-4" onsubmit="saveConsult(event)">
@@ -1069,24 +1070,22 @@ async function docOPD() {
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
+            <div class="alert alert-info py-2 small" id="consult-patient-info"></div>
             <input type="hidden" id="consult-id">
-            <div id="consult-patient-info" class="alert alert-info p-2 mb-3 small"></div>
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Diagnosis</label>
-              <textarea id="consult-diag" class="form-control" rows="2" required></textarea>
-            </div>
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Prescription / Medicines</label>
-              <textarea id="consult-rx" class="form-control" rows="4" placeholder="1. Tab Paracetamol 500mg - 1x3 days&#10;2. Tab Amoxicillin 500mg - 1x5 days"></textarea>
-            </div>
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Notes / Advice</label>
-              <textarea id="consult-notes" class="form-control" rows="2" placeholder="Rest for 2 days, drink plenty of water..."></textarea>
-            </div>
+            <div class="mb-3"><label class="form-label fw-semibold">Diagnosis</label>
+              <textarea id="consult-diag" class="form-control" rows="2"></textarea></div>
+            <div class="mb-3"><label class="form-label fw-semibold">Prescription / Medicines</label>
+              <textarea id="consult-rx" class="form-control" rows="4"></textarea></div>
+            <div class="mb-3"><label class="form-label fw-semibold">Notes / Advice</label>
+              <textarea id="consult-notes" class="form-control" rows="2"></textarea></div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-outline-secondary" onclick="printConsultSlip()"><i class="bi bi-printer me-1"></i>Print Slip</button>
-            <button type="submit" class="btn btn-success"><i class="bi bi-check-circle me-1"></i>Save & Close</button>
+            <button type="button" class="btn btn-secondary" onclick="printConsultSlip()">
+              <i class="bi bi-printer me-1"></i>Print Slip
+            </button>
+            <button type="submit" class="btn btn-success" id="consult-save-btn">
+              <i class="bi bi-check-circle me-1"></i>Save & Close
+            </button>
           </div>
         </form>
       </div>
@@ -1127,31 +1126,34 @@ function filterStatus(sel,tableId){const val=sel.value;document.querySelectorAll
 function filterDate(input,tableId){const val=input.value;document.querySelectorAll('#'+tableId+' tbody tr').forEach(tr=>tr.style.display=!val||tr.textContent.includes(val)?'':'none');}
 window.onload=()=>{if(session?.token&&session?.user){currentRole=session.user.role;launchApp();}}
 let _currentConsultOPD = null;
-
-function opdConsultModal(o) {
-  if (typeof o === 'string') {
-    o = JSON.parse(o.replace(/&quot;/g, '"'));
-  }
+  
+function opdConsultModal(id) {
+  const o = opdListCache.find(x => x.id == id);
+  if (!o) { toast('Patient not found', 'error'); return; }
   currentConsultOPD = o;
   document.getElementById('consult-id').value = o.id;
   document.getElementById('consult-patient-info').innerHTML =
-    `<b>${o.full_name||o.fullname}</b> &nbsp; Age: ${o.age||'-'} &nbsp; Sex: ${o.gender||'-'} &nbsp; UHID: <b>${o.uhid}</b> &nbsp; Token: <b>${o.token_no||o.tokenno}</b><br>
-    Complaint: ${o.chief_complaint||o.chiefcomplaint||'-'} &nbsp; BP: ${o.bp_systolic||o.bpsystolic||'-'}/${o.bp_diastolic||o.bpdiastolic||'-'} &nbsp; Temp: ${o.temperature||'-'} &nbsp; SpO2: ${o.spo2||'-'}`;
+    `<b>${o.full_name}</b> &nbsp; Age: ${o.age||'-'} &nbsp; Sex: ${o.gender||'-'} &nbsp; 
+     UHID: <b>${o.uhid}</b> &nbsp; Token: <b>${o.token_no}</b><br>
+     Complaint: ${o.chief_complaint||'-'} &nbsp; BP: ${o.bp_systolic||'-'}/${o.bp_diastolic||'-'} &nbsp; 
+     Temp: ${o.temperature||'-'} &nbsp; SpO2: ${o.spo2||'-'}`;
   document.getElementById('consult-diag').value = o.diagnosis || '';
   document.getElementById('consult-rx').value = o.prescription || '';
   document.getElementById('consult-notes').value = o.notes || '';
   new bootstrap.Modal(document.getElementById('opdConsultModal')).show();
 }
 
-async function printOPDSlipById(id) {
-  const o = await apiFetch('opd/' + id);
-  printOPDSlip(o);
+function printSlipById(id) {
+  const o = opdListCache.find(x => x.id == id);
+  if (!o) { toast('Patient not found', 'error'); return; }
+  currentConsultOPD = o;
+  printConsultSlip();
 }
 
 async function saveConsult(e) {
   e.preventDefault();
-  const btn = e.submitter || e.target.querySelector('[type=submit]');
-  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+  const btn = document.getElementById('consult-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
   try {
     const id = document.getElementById('consult-id').value;
     await apiFetch(`opd/${id}/consult`, { method: 'PUT', body: JSON.stringify({
@@ -1159,14 +1161,14 @@ async function saveConsult(e) {
       prescription: document.getElementById('consult-rx').value,
       notes: document.getElementById('consult-notes').value
     })});
-    const modal = bootstrap.Modal.getInstance(document.getElementById('opdConsultModal'));
-    if (modal) modal.hide();
+    bootstrap.Modal.getInstance(document.getElementById('opdConsultModal')).hide();
     toast('Consultation saved!');
     renderPage('doc-opd');
   } catch(ex) {
     toast(ex.message, 'error');
   } finally {
-    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Save & Close'; }
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Save & Close';
   }
 }
 
