@@ -1338,9 +1338,13 @@ function printConsultSlip() {
   }
 
   const o = currentConsultOPD;
-  const diag = document.getElementById('consult-diag')?.value || '-';
-  const rx = document.getElementById('consult-rx')?.value || '-';
-  const notes = document.getElementById('consult-notes')?.value || '';
+  const diagInput = document.getElementById('consult-diag');
+  const rxInput = document.getElementById('consult-rx');
+  const notesInput = document.getElementById('consult-notes');
+
+  const diag = (diagInput && diagInput.value.trim()) || o.diagnosis || '-';
+  const rx = (rxInput && rxInput.value.trim()) || o.prescription || '-';
+  const notes = (notesInput && notesInput.value.trim()) || o.notes || '-';
 
   const win = window.open('', '_blank', 'width=800,height=900');
   if (!win) {
@@ -1407,7 +1411,7 @@ function printConsultSlip() {
   <pre>${rx}</pre>
 
   <div class="section-title">Notes / Advice</div>
-  <pre>${notes || '-'}</pre>
+  <pre>${notes}</pre>
 
   <div class="sign-box">
     ___________________________<br>
