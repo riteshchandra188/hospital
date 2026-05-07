@@ -402,43 +402,73 @@ app.post('/api/reports/upload', auth, requireRole('admin', 'doctor', 'receptioni
     const { patient_id, test, date } = req.body;
     if (!patient_id || !test || !date) return badRequest(res, 'Patient, test and date are required');
     if (!req.file) return badRequest(res, 'No file uploaded');
+
     await pool.query(
-      'INSERT INTO reports (patient_id,test,date,status,file_data,file_name,file_mime,uploaded_by) VALUES (?,?,?,?,?,?,?,?)',
-      [patient_id, test, date, 'Ready', req.file.buffer, req.file.originalname, req.file.mimetype || 'application/octet-stream', req.user.role]
+      'INSERT INTO reports (patient_id,test,date,status,file_data,file_name,file_mime,file_size,uploaded_by) VALUES (?,?,?,?,?,?,?,?,?)',
+      [
+        patient_id,
+        test,
+        date,
+        'Ready',
+        req.file.buffer,
+        req.file.originalname,
+        req.file.mimetype || 'application/octet-stream',
+        req.file.size || 0,
+        req.user.role
+      ]
     );
+
     res.json({ ok: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.get('/api/reports/mine', auth, requireRole('patient'), async (req, res) => {
   try {
-    const [r] = await pool.query('SELECT id,test,date,status,file_name,uploaded_by,created_at FROM reports WHERE patient_id=? ORDER BY date DESC, created_at DESC', [req.user.id]);
+    const [r] = await pool.query(
+      'SELECT id,test,date,status,file_name,file_mime,file_size,uploaded_by,created_at FROM reports WHERE patient_id=? ORDER BY date DESC, created_at DESC',
+      [req.user.id]
+    );
     res.json(r);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.get('/api/reports', auth, requireRole('admin', 'doctor', 'receptionist'), async (req, res) => {
   try {
-    const [r] = await pool.query(`SELECT r.id,r.test,r.date,r.status,r.file_name,r.uploaded_by,r.created_at,p.name AS patient_name
+    const [r] = await pool.query(`
+      SELECT r.id,r.test,r.date,r.status,r.file_name,r.file_mime,r.file_size,r.uploaded_by,r.created_at,p.name AS patient_name
       FROM reports r
       JOIN patients p ON r.patient_id=p.id
-      ORDER BY r.date DESC, r.created_at DESC`);
+      ORDER BY r.date DESC, r.created_at DESC
+    `);
     res.json(r);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.get('/api/reports/:id/download', auth, async (req, res) => {
   try {
     const [[report]] = await pool.query('SELECT * FROM reports WHERE id=?', [req.params.id]);
     if (!report) return res.status(404).json({ error: 'Not found' });
+
     if (req.user.role === 'patient') {
-      const [[mine]] = await pool.query('SELECT id FROM reports WHERE id=? AND patient_id=?', [req.params.id, req.user.id]);
+      const [[mine]] = await pool.query(
+        'SELECT id FROM reports WHERE id=? AND patient_id=?',
+        [req.params.id, req.user.id]
+      );
       if (!mine) return res.status(403).json({ error: 'Access denied' });
     }
+
     res.setHeader('Content-Type', report.file_mime || 'application/octet-stream');
     res.setHeader('Content-Disposition', `attachment; filename="${report.file_name}"`);
     res.send(report.file_data);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.delete('/api/reports/:id', auth, requireRole('admin', 'doctor', 'receptionist'), async (req, res) => {
