@@ -1125,7 +1125,7 @@ function filterTable(input,tableId){const val=input.value.toLowerCase();document
 function filterStatus(sel,tableId){const val=sel.value;document.querySelectorAll('#'+tableId+' tbody tr').forEach(tr=>tr.style.display=!val||tr.textContent.includes(val)?'':'none');}
 function filterDate(input,tableId){const val=input.value;document.querySelectorAll('#'+tableId+' tbody tr').forEach(tr=>tr.style.display=!val||tr.textContent.includes(val)?'':'none');}
 window.onload=()=>{if(session?.token&&session?.user){currentRole=session.user.role;launchApp();}}
-let _currentConsultOPD = null;
+let currentConsultOPD = null;
   
 function opdConsultModal(id) {
   const o = opdListCache.find(x => x.id == id);
