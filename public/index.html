@@ -225,34 +225,45 @@ async function doRegister(e){
 }
 const menus = {
   admin: [
-    { icon: 'speedometer2', label: 'Dashboard', key: 'admin-dash' },
-    { icon: 'people-fill', label: 'Doctors', key: 'admin-doctors' },
-    { icon: 'person-badge-fill', label: 'Receptionists', key: 'admin-receptionists' },
-    { icon: 'person-lines-fill', label: 'Patients', key: 'admin-patients' },
-    { icon: 'calendar-check-fill', label: 'Appointments', key: 'admin-appts' },
-    { icon: 'receipt', label: 'Billing', key: 'admin-billing' },
-    { icon: 'file-earmark-arrow-up', label: 'Reports', key: 'admin-reports' },
-    { icon: 'clipboard2-pulse-fill', label: 'OPD Records', key: 'admin-opd' },
+    { icon:'speedometer2', label:'Dashboard', key:'admin-dash' },
+    { icon:'people-fill', label:'Doctors', key:'admin-doctors' },
+    { icon:'person-badge-fill', label:'Receptionists', key:'admin-receptionists' },
+    { icon:'person-lines-fill', label:'Patients', key:'admin-patients' },
+    { icon:'calendar-check-fill', label:'Scheduled Visits', key:'admin-appts' },
+    { icon:'clipboard2-pulse-fill', label:'Walk-In / OPD Visits', key:'admin-opd' },
+    { icon:'receipt', label:'Billing', key:'admin-billing' },
+    { icon:'file-earmark-arrow-up', label:'Reports', key:'admin-reports' }
   ],
+
   doctor: [
-    { icon: 'speedometer2', label: 'Dashboard', key: 'doc-dash' },
-    { icon: 'calendar-check-fill', label: 'Appointments', key: 'doc-appts' },
-    { icon: 'file-medical-fill', label: 'Prescriptions', key: 'doc-rx' },
-    { icon: 'file-earmark-arrow-up', label: 'Upload Report', key: 'doc-reports' },
-    { icon: 'clipboard2-pulse-fill', label: 'OPD Patients', key: 'doc-opd' },
-  
+    { icon:'speedometer2', label:'Dashboard', key:'doc-dash' },
+    { icon:'calendar2-week-fill', label:"Today's Queue", key:'doc-queue' },
+    { icon:'calendar-check-fill', label:'Scheduled Appointments', key:'doc-appts' },
+    { icon:'clipboard2-pulse-fill', label:'Walk-In OPD', key:'doc-opd' },
+    { icon:'file-medical-fill', label:'Prescriptions', key:'doc-rx' },
+    { icon:'file-earmark-arrow-up', label:'Reports', key:'doc-reports' },
+    { icon:'check2-circle', label:'Completed Visits', key:'doc-completed' }
   ],
-  patient:[
-    {icon:'speedometer2',label:'Dashboard',key:'pat-dash'},
-    {icon:'calendar-plus-fill',label:'Book Appointment',key:'pat-book'},
-    {icon:'file-earmark-medical',label:'My Reports',key:'pat-reports'},
-    {icon:'file-medical-fill',label:'My Prescriptions',key:'pat-rx'},
+
+  patient: [
+    { icon:'speedometer2', label:'Dashboard', key:'pat-dash' },
+    { icon:'calendar-plus-fill', label:'Book Appointment', key:'pat-book' },
+    { icon:'calendar-week-fill', label:'My Appointments', key:'pat-appts' },
+    { icon:'file-earmark-medical', label:'My Reports', key:'pat-reports' },
+    { icon:'file-medical-fill', label:'My Prescriptions', key:'pat-rx' },
+    { icon:'person-circle', label:'Profile', key:'pat-profile' }
   ],
+
   receptionist: [
-  { icon: 'speedometer2', label: 'Dashboard', key: 'rec-dash' },
-  { icon: 'clipboard2-pulse-fill', label: 'New OPD', key: 'rec-opd' },
-  { icon: 'list-ul', label: 'OPD List', key: 'rec-opd-list' },
-]
+    { icon:'speedometer2', label:'Dashboard', key:'rec-dash' },
+    { icon:'calendar-day-fill', label:"Today's Appointments", key:'rec-appts' },
+    { icon:'person-check-fill', label:'Check-In Patient', key:'rec-checkin' },
+    { icon:'clipboard2-plus-fill', label:'New Walk-In OPD', key:'rec-opd' },
+    { icon:'list-ul', label:'OPD Queue', key:'rec-opd-list' },
+    { icon:'receipt', label:'Billing', key:'rec-billing' },
+    { icon:'file-earmark-arrow-up', label:'Reports Upload', key:'rec-reports' },
+    { icon:'search', label:'Patient Search', key:'rec-search' }
+  ]
 };
 function launchApp(){
   hide('role-screen');hide('auth-screen');show('app-shell');
@@ -276,25 +287,37 @@ function setActiveNav(key){document.querySelectorAll('#sidebar-nav .nav-link').f
 function logout(){clearSession();hide('app-shell');showRoleSelect();}
 const titles = {
   'admin-dash': 'Dashboard',
-  'admin-doctors': 'Manage Doctors',
-  'admin-receptionists': 'Manage Receptionists',
+  'admin-doctors': 'Doctors',
+  'admin-receptionists': 'Receptionists',
   'admin-patients': 'Patients',
-  'admin-appts': 'Appointments',
+  'admin-appts': 'Scheduled Visits',
   'admin-billing': 'Billing',
-  'admin-reports': 'Manage Reports',
-  'admin-opd': 'OPD Records',
+  'admin-reports': 'Reports',
+  'admin-opd': 'Walk-In / OPD Visits',
+
   'doc-dash': 'Dashboard',
-  'doc-appts': 'My Appointments',
+  'doc-queue': "Today's Queue",
+  'doc-appts': 'Scheduled Appointments',
   'doc-rx': 'Prescriptions',
-  'doc-reports': 'Upload Report',
-  'doc-opd': 'OPD Patients',
+  'doc-reports': 'Reports',
+  'doc-opd': 'Walk-In OPD',
+  'doc-completed': 'Completed Visits',
+
   'pat-dash': 'Dashboard',
   'pat-book': 'Book Appointment',
+  'pat-appts': 'My Appointments',
   'pat-reports': 'My Reports',
   'pat-rx': 'My Prescriptions',
+  'pat-profile': 'Profile',
+
   'rec-dash': 'Reception Dashboard',
-  'rec-opd': 'New OPD Registration',
-  'rec-opd-list': 'OPD List'
+  'rec-appts': "Today's Appointments",
+  'rec-checkin': 'Check-In Patient',
+  'rec-opd': 'New Walk-In OPD',
+  'rec-opd-list': 'OPD Queue',
+  'rec-billing': 'Billing',
+  'rec-reports': 'Reports Upload',
+  'rec-search': 'Patient Search'
 };
 async function renderPage(key){
   setActiveNav(key);
@@ -305,8 +328,17 @@ async function renderPage(key){
     switch(key){
       case 'admin-dash':c.innerHTML=await adminDash();break;
       case 'admin-doctors':c.innerHTML=await adminDoctors();break;
+      case 'doc-queue':c.innerHTML = await docQueue();break;
+      case 'doc-completed':c.innerHTML = await docCompleted();break;
       case 'admin-receptionists': c.innerHTML = await adminReceptionists(); break;
+      case 'rec-appts':c.innerHTML = await recAppointments();break;
+      case 'rec-checkin':c.innerHTML = await recCheckIn();break;
+      case 'rec-billing':c.innerHTML = await recBilling();break;
+      case 'rec-reports':c.innerHTML = await recReports();break;
+    case 'rec-search':c.innerHTML = await recSearch();break;
       case 'admin-patients':c.innerHTML=await adminPatients();break;
+      case 'pat-appts':c.innerHTML = await patAppointments();break;
+      case 'pat-profile':c.innerHTML = await patProfile();break;
       case 'admin-appts':c.innerHTML=await adminAppts();break;
       case 'admin-billing':c.innerHTML=await adminBilling();break;
       case 'admin-reports':c.innerHTML=await adminReports();break;
@@ -1257,7 +1289,280 @@ function statusBadge(s){return s==='Confirmed'?'bg-success':s==='Pending'?'bg-wa
 function filterTable(input,tableId){const val=input.value.toLowerCase();document.querySelectorAll('#'+tableId+' tbody tr').forEach(tr=>tr.style.display=tr.textContent.toLowerCase().includes(val)?'':'none');}
 function filterStatus(sel,tableId){const val=sel.value;document.querySelectorAll('#'+tableId+' tbody tr').forEach(tr=>tr.style.display=!val||tr.textContent.includes(val)?'':'none');}
 function filterDate(input,tableId){const val=input.value;document.querySelectorAll('#'+tableId+' tbody tr').forEach(tr=>tr.style.display=!val||tr.textContent.includes(val)?'':'none');}
-window.onload=()=>{if(session?.token&&session?.user){currentRole=session.user.role;launchApp();}}
+async function patAppointments() {
+  const appts = await apiFetch('appointments/mine');
+  return `
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header bg-white fw-semibold border-0 pt-3">My Appointments</div>
+    <div class="card-body p-0">
+      <table class="table hms-table mb-0 align-middle">
+        <thead>
+          <tr>
+            <th>Doctor</th>
+            <th>Speciality</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${appts.length ? appts.map(a => `
+            <tr>
+              <td>${a.doctor_name}</td>
+              <td>${a.speciality || '-'}</td>
+              <td>${a.date}</td>
+              <td>${a.time}</td>
+              <td><span class="badge ${statusBadge(a.status)}">${a.status}</span></td>
+            </tr>
+          `).join('') : `
+            <tr><td colspan="5" class="text-center text-muted py-3">No appointments found</td></tr>
+          `}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+async function patProfile() {
+  const u = session.user;
+  return `
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header bg-white fw-semibold border-0 pt-3">Profile</div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Name</label>
+          <input class="form-control" value="${u.name || ''}" disabled>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Role</label>
+          <input class="form-control" value="${u.role || ''}" disabled>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Email</label>
+          <input class="form-control" value="${u.email || ''}" disabled>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function recAppointments() {
+  const appts = await apiFetch('appointments');
+  const today = new Date().toISOString().split('T')[0];
+  const todayAppts = appts.filter(a => a.date === today);
+
+  return `
+  <div class="mb-3 d-flex gap-2">
+    <input class="form-control w-25" placeholder="Search..." oninput="filterTable(this,'rec-appt-tbl')">
+  </div>
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header bg-white fw-semibold border-0 pt-3">Today's Appointments</div>
+    <div class="card-body p-0">
+      <table class="table hms-table mb-0 align-middle" id="rec-appt-tbl">
+        <thead>
+          <tr>
+            <th>Patient</th>
+            <th>Doctor</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Status</th>
+            <th>Check-In</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${todayAppts.length ? todayAppts.map(a => `
+            <tr>
+              <td>${a.patient_name}</td>
+              <td>${a.doctor_name}</td>
+              <td>${a.date}</td>
+              <td>${a.time}</td>
+              <td><span class="badge ${statusBadge(a.status)}">${a.status}</span></td>
+              <td>
+                <button class="btn btn-sm btn-outline-success" onclick="checkInAppointment(${a.id}, '${a.status}')">
+                  <i class="bi bi-person-check"></i> Check-In
+                </button>
+              </td>
+            </tr>
+          `).join('') : `
+            <tr><td colspan="6" class="text-center text-muted py-3">No appointments for today</td></tr>
+          `}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+async function recCheckIn() {
+  return `
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header bg-white fw-semibold border-0 pt-3">Check-In Patient</div>
+    <div class="card-body">
+      <p class="text-muted mb-3">Use <b>Today's Appointments</b> to check in booked patients and move them into the live workflow.</p>
+      <button class="btn btn-primary" onclick="renderPage('rec-appts')">
+        <i class="bi bi-calendar-day me-1"></i> Open Today's Appointments
+      </button>
+    </div>
+  </div>`;
+}
+
+async function recBilling() {
+  return await adminBilling();
+}
+
+async function recReports() {
+  return await docReports();
+}
+
+async function recSearch() {
+  const opds = await apiFetch('opd');
+  return `
+  <div class="mb-3">
+    <input class="form-control" placeholder="Search by patient name, UHID, mobile, token..." oninput="filterTable(this,'rec-search-tbl')">
+  </div>
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header bg-white fw-semibold border-0 pt-3">Patient Search</div>
+    <div class="card-body p-0">
+      <table class="table hms-table mb-0 align-middle" id="rec-search-tbl">
+        <thead>
+          <tr>
+            <th>UHID</th>
+            <th>Patient</th>
+            <th>Mobile</th>
+            <th>Doctor</th>
+            <th>Token</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${opds.length ? opds.map(o => `
+            <tr>
+              <td>${o.uhid}</td>
+              <td>${o.full_name}</td>
+              <td>${o.mobile || '-'}</td>
+              <td>${o.doctor_name || '-'}</td>
+              <td>${o.token_no}</td>
+              <td><span class="badge bg-secondary">${o.status || 'Waiting'}</span></td>
+            </tr>
+          `).join('') : `
+            <tr><td colspan="6" class="text-center text-muted py-3">No patient records found</td></tr>
+          `}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+async function docQueue() {
+  const [appts, opds] = await Promise.all([
+    apiFetch('appointments/doctor'),
+    apiFetch('opd/doctor')
+  ]);
+
+  const queueRows = [
+    ...appts.map(a => ({
+      source: 'Appointment',
+      patient: a.patient_name,
+      age: a.age || '-',
+      doctor: session.user.name,
+      date: a.date,
+      time: a.time,
+      status: a.status || 'Pending'
+    })),
+    ...opds.map(o => ({
+      source: 'Walk-In OPD',
+      patient: o.full_name,
+      age: o.age || '-',
+      doctor: o.doctor_name || session.user.name,
+      date: o.reg_date,
+      time: o.reg_time,
+      status: o.status || 'Waiting'
+    }))
+  ];
+
+  return `
+  <div class="mb-3">
+    <input class="form-control w-25" placeholder="Search..." oninput="filterTable(this,'doc-queue-tbl')">
+  </div>
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header bg-white fw-semibold border-0 pt-3">Today's Queue</div>
+    <div class="card-body p-0">
+      <table class="table hms-table mb-0 align-middle" id="doc-queue-tbl">
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th>Patient</th>
+            <th>Age</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${queueRows.length ? queueRows.map(r => `
+            <tr>
+              <td><span class="badge ${r.source === 'Appointment' ? 'bg-primary' : 'bg-success'}">${r.source}</span></td>
+              <td>${r.patient}</td>
+              <td>${r.age}</td>
+              <td>${r.date}</td>
+              <td>${r.time}</td>
+              <td><span class="badge ${statusBadge(r.status)}">${r.status}</span></td>
+            </tr>
+          `).join('') : `
+            <tr><td colspan="6" class="text-center text-muted py-3">No patients in queue</td></tr>
+          `}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+async function docCompleted() {
+  const opds = await apiFetch('opd/doctor');
+  const done = opds.filter(o => ['Consulted', 'Completed'].includes(o.status));
+  return `
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header bg-white fw-semibold border-0 pt-3">Completed Visits</div>
+    <div class="card-body p-0">
+      <table class="table hms-table mb-0 align-middle">
+        <thead>
+          <tr>
+            <th>UHID</th>
+            <th>Patient</th>
+            <th>Date</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${done.length ? done.map(o => `
+            <tr>
+              <td>${o.uhid}</td>
+              <td>${o.full_name}</td>
+              <td>${o.reg_date}</td>
+              <td><span class="badge ${statusBadge(o.status)}">${o.status}</span></td>
+            </tr>
+          `).join('') : `
+            <tr><td colspan="4" class="text-center text-muted py-3">No completed visits found</td></tr>
+          `}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+async function checkInAppointment(id, status) {
+  if (status === 'Completed' || status === 'Cancelled') {
+    toast('This appointment cannot be checked in', 'error');
+    return;
+  }
+  await apiFetch(`appointments/${id}/status`, {
+    method: 'PUT',
+    body: JSON.stringify({ status: 'Confirmed' })
+  });
+  toast('Patient checked in successfully!');
+  renderPage('rec-appts');
+}
+  window.onload=()=>{if(session?.token&&session?.user){currentRole=session.user.role;launchApp();}}
 let currentConsultOPD = null;
   
 function opdConsultModal(id) {
