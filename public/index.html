@@ -882,7 +882,7 @@ async function recOPDForm() {
           <button class="btn btn-primary" onclick="bootstrap.Modal.getInstance(document.getElementById('opdSuccessModal')).hide();renderPage('rec-opd')">
             <i class="bi bi-plus-circle me-1"></i>New Registration
           </button>
-          <button class="btn btn-success" onclick="printOPDSlip(_lastOPDRec)">
+          <button class="btn btn-success" onclick="printOPDSlipById(_lastOPDRec?.id)">
             <i class="bi bi-printer me-1"></i>Print Slip
           </button>
           <button class="btn btn-outline-secondary" onclick="bootstrap.Modal.getInstance(document.getElementById('opdSuccessModal')).hide();renderPage('rec-opd-list')">
@@ -968,7 +968,112 @@ async function submitOPD(e) {
     new bootstrap.Modal(document.getElementById('opdSuccessModal')).show();
   } catch(e) { toast(e.message, 'error'); }
 }
+async function viewOPDDetails(id) {
+  try {
+    const o = await apiFetch(`opd/${id}`);
+    if (!o) {
+      toast('OPD record not found', 'error');
+      return;
+    }
+    renderPage('rec-opd');
+    setTimeout(() => fillOPDForm(o), 200);
+  } catch (ex) {
+    toast(ex.message || 'Unable to load OPD details', 'error');
+  }
+}
 
+function fillOPDForm(o) {
+  const setVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val ?? '';
+  };
+
+  setVal('opd-name', o.full_name);
+  setVal('opd-fhname', o.father_husband_name);
+  setVal('opd-dob', o.dob ? String(o.dob).split('T')[0] : '');
+  setVal('opd-age', o.age);
+  setVal('opd-gender', o.gender);
+  setVal('opd-blood', o.blood_group);
+  setVal('opd-marital', o.marital_status);
+  setVal('opd-mobile', o.mobile);
+  setVal('opd-altmobile', o.alternate_mobile);
+  setVal('opd-email', o.email);
+  setVal('opd-address', o.address);
+  setVal('opd-city', o.city);
+  setVal('opd-state', o.state);
+  setVal('opd-pincode', o.pin_code);
+  setVal('opd-department', o.department);
+  setVal('opd-doctor', o.doctor_id);
+  setVal('opd-visit', o.visit_type);
+  setVal('opd-cfee', o.consultation_fee);
+  setVal('opd-rfee', o.registration_fee);
+  setVal('opd-total', o.total_amount);
+  setVal('opd-paymode', o.payment_mode);
+  setVal('opd-paid', o.amount_paid);
+  setVal('opd-balance', o.balance);
+  setVal('opd-height', o.height);
+  setVal('opd-weight', o.weight);
+  setVal('opd-temp', o.temperature);
+  setVal('opd-pulse', o.pulse_rate);
+  setVal('opd-bps', o.bp_systolic);
+  setVal('opd-bpd', o.bp_diastolic);
+  setVal('opd-spo2', o.spo2);
+  setVal('opd-rr', o.respiratory_rate);
+  setVal('opd-complaint', o.chief_complaint);
+  setVal('opd-symptoms', o.symptoms);
+  setVal('opd-prevsurg', o.previous_surgeries);
+  setVal('opd-pasthosp', o.past_hospitalization);
+  setVal('opd-currentmed', o.current_medications);
+  setVal('opd-drugallergy', o.drug_allergies);
+  setVal('opd-foodallergy', o.food_allergies);
+  setVal('opd-occupation', o.occupation);
+  setVal('opd-ecname', o.emergency_contact_name);
+  setVal('opd-ecrelation', o.emergency_contact_relation);
+  setVal('opd-ecphone', o.emergency_contact_phone);
+
+  const setCheck = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.checked = !!val;
+  };
+
+  setCheck('opd-diabetes', o.diabetes);
+  setCheck('opd-hypertension', o.hypertension);
+  setCheck('opd-heart', o.heart_disease);
+  setCheck('opd-asthma', o.asthma);
+  setCheck('opd-thyroid', o.thyroid);
+}
+
+async function printOPDSlipById(id) {
+  try {
+    if (!id) {
+      toast('OPD id missing', 'error');
+      return;
+    }
+    const o = await apiFetch(`opd/${id}`);
+    if (!o) {
+      toast('OPD record not found', 'error');
+      return;
+    }
+    printOPDSlip(o);
+  } catch (ex) {
+    toast(ex.message || 'Unable to load OPD slip', 'error');
+  }
+}
+
+async function printPrescriptionByOPDId(id) {
+  try {
+    const o = await apiFetch(`opd/${id}`);
+    if (!o) {
+      toast('Prescription not found', 'error');
+      return;
+    }
+    currentConsultOPD = o;
+    printConsultSlip();
+  } catch (ex) {
+    toast(ex.message || 'Unable to load prescription', 'error');
+  }
+}
+  
 async function recOPDList() {
   const opds = await apiFetch('opd');
   return `
@@ -979,17 +1084,45 @@ async function recOPDList() {
   <div class="card border-0 shadow-sm rounded-4">
     <div class="card-body p-0">
       <table class="table hms-table mb-0 align-middle" id="opd-tbl">
-        <thead><tr><th>UHID</th><th>Patient</th><th>Mobile</th><th>Doctor</th><th>Token</th><th>Visit</th><th>Status</th><th>Date</th></tr></thead>
-        <tbody>${opds.length ? opds.map(o => `<tr>
-          <td><span class="badge bg-light text-dark border">${o.uhid}</span></td>
-          <td>${o.full_name}</td>
-          <td>${o.mobile || '-'}</td>
-          <td>${o.doctor_name || '-'}</td>
-          <td><span class="badge bg-primary">${o.token_no}</span></td>
-          <td>${o.visit_type}</td>
-          <td><span class="badge bg-${o.status==='Waiting'?'warning text-dark':o.status==='Completed'?'success':o.status==='With Doctor'?'info':'secondary'}">${o.status}</span></td>
-          <td>${o.reg_date?.split('T')[0] || o.reg_date}</td>
-        </tr>`).join('') : '<tr><td colspan="8" class="text-center text-muted py-3">No OPD records found</td></tr>'}</tbody>
+        <thead>
+          <tr>
+            <th>UHID</th>
+            <th>Patient</th>
+            <th>Mobile</th>
+            <th>Doctor</th>
+            <th>Token</th>
+            <th>Visit</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${opds.length ? opds.map(o => `<tr>
+            <td>
+              <button class="btn btn-link p-0 text-decoration-none fw-semibold" onclick="viewOPDDetails(${o.id})">${o.uhid}</button>
+            </td>
+            <td>${o.full_name}</td>
+            <td>${o.mobile || '-'}</td>
+            <td>${o.doctor_name || '-'}</td>
+            <td><span class="badge bg-primary">${o.token_no}</span></td>
+            <td>${o.visit_type || 'OPD'}</td>
+            <td><span class="badge bg-secondary">${o.status || 'Waiting'}</span></td>
+            <td>${o.reg_date?.split('T')[0] || o.reg_date}</td>
+            <td class="d-flex gap-1 flex-wrap">
+              <button class="btn btn-sm btn-outline-primary" onclick="printOPDSlipById(${o.id})">
+                <i class="bi bi-printer"></i> Slip
+              </button>
+              <button class="btn btn-sm btn-outline-success" onclick="printPrescriptionByOPDId(${o.id})">
+                <i class="bi bi-file-earmark-medical"></i> Prescription
+              </button>
+            </td>
+          </tr>`).join('') : `
+            <tr>
+              <td colspan="9" class="text-center text-muted py-3">No OPD records found</td>
+            </tr>
+          `}
+        </tbody>
       </table>
     </div>
   </div>`;
@@ -1129,43 +1262,69 @@ let currentConsultOPD = null;
   
 function opdConsultModal(id) {
   const o = opdListCache.find(x => x.id == id);
-  if (!o) { toast('Patient not found', 'error'); return; }
+  if (!o) {
+    toast('Patient not found', 'error');
+    return;
+  }
+
   currentConsultOPD = o;
   document.getElementById('consult-id').value = o.id;
   document.getElementById('consult-patient-info').innerHTML =
-    `<b>${o.full_name}</b> &nbsp; Age: ${o.age||'-'} &nbsp; Sex: ${o.gender||'-'} &nbsp; 
+    `<b>${o.full_name}</b> &nbsp; Age: ${o.age || '-'} &nbsp; Sex: ${o.gender || '-'} &nbsp;
      UHID: <b>${o.uhid}</b> &nbsp; Token: <b>${o.token_no}</b><br>
-     Complaint: ${o.chief_complaint||'-'} &nbsp; BP: ${o.bp_systolic||'-'}/${o.bp_diastolic||'-'} &nbsp; 
-     Temp: ${o.temperature||'-'} &nbsp; SpO2: ${o.spo2||'-'}`;
+     Complaint: ${o.chief_complaint || '-'} &nbsp; BP: ${o.bp_systolic || '-'}/${o.bp_diastolic || '-'} &nbsp;
+     Temp: ${o.temperature || '-'} &nbsp; SpO2: ${o.spo2 || '-'}`;
+
   document.getElementById('consult-diag').value = o.diagnosis || '';
   document.getElementById('consult-rx').value = o.prescription || '';
   document.getElementById('consult-notes').value = o.notes || '';
-  new bootstrap.Modal(document.getElementById('opdConsultModal')).show();
+
+  const modalEl = document.getElementById('opdConsultModal');
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  modal.show();
 }
 
 function printSlipById(id) {
   const o = opdListCache.find(x => x.id == id);
-  if (!o) { toast('Patient not found', 'error'); return; }
+  if (!o) {
+    toast('Patient not found', 'error');
+    return;
+  }
   currentConsultOPD = o;
   printConsultSlip();
 }
 
 async function saveConsult(e) {
   e.preventDefault();
+
   const btn = document.getElementById('consult-save-btn');
-  btn.disabled = true; btn.textContent = 'Saving...';
+  const modalEl = document.getElementById('opdConsultModal');
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Saving...';
+
   try {
     const id = document.getElementById('consult-id').value;
-    await apiFetch(`opd/${id}/consult`, { method: 'PUT', body: JSON.stringify({
-      diagnosis: document.getElementById('consult-diag').value,
-      prescription: document.getElementById('consult-rx').value,
-      notes: document.getElementById('consult-notes').value
-    })});
-    bootstrap.Modal.getInstance(document.getElementById('opdConsultModal')).hide();
+
+    await apiFetch(`opd/${id}/consult`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        diagnosis: document.getElementById('consult-diag').value,
+        prescription: document.getElementById('consult-rx').value,
+        notes: document.getElementById('consult-notes').value
+      })
+    });
+
+    modal.hide();
     toast('Consultation saved!');
-    renderPage('doc-opd');
-  } catch(ex) {
-    toast(ex.message, 'error');
+    currentConsultOPD = null;
+
+    setTimeout(() => {
+      renderPage('doc-opd');
+    }, 200);
+  } catch (ex) {
+    toast(ex.message || 'Failed to save consultation', 'error');
   } finally {
     btn.disabled = false;
     btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Save & Close';
@@ -1173,13 +1332,27 @@ async function saveConsult(e) {
 }
 
 function printConsultSlip() {
-  if (!currentConsultOPD) { toast('No patient loaded for print', 'error'); return; }
+  if (!currentConsultOPD) {
+    toast('No patient loaded for print', 'error');
+    return;
+  }
+
   const o = currentConsultOPD;
-  const diag = document.getElementById('consult-diag').value || '-';
-  const rx = document.getElementById('consult-rx').value || '-';
-  const notes = document.getElementById('consult-notes').value || '';
-  const win = window.open('','_blank','width=800,height=900');
-  win.document.write(`<!DOCTYPE html><html><head><title>Prescription</title>
+  const diag = document.getElementById('consult-diag')?.value || '-';
+  const rx = document.getElementById('consult-rx')?.value || '-';
+  const notes = document.getElementById('consult-notes')?.value || '';
+
+  const win = window.open('', '_blank', 'width=800,height=900');
+  if (!win) {
+    toast('Popup blocked. Please allow popups for printing.', 'error');
+    return;
+  }
+
+  win.document.open();
+  win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <title>Prescription</title>
   <style>
     body{font-family:Arial,sans-serif;margin:0;padding:20px;font-size:13px}
     .header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #0d6efd;padding-bottom:10px;margin-bottom:10px}
@@ -1190,61 +1363,69 @@ function printConsultSlip() {
     .patient-box table{width:100%}
     .patient-box td{padding:2px 8px;font-size:12px}
     .section-title{font-weight:700;color:#0d6efd;border-bottom:1px solid #cde;margin:10px 0 6px;padding-bottom:3px;font-size:13px}
-    .rx-symbol{font-size:28px;font-weight:700;color:#0d6efd;margin-right:8px}
     pre{font-family:Arial,sans-serif;white-space:pre-wrap;margin:0;font-size:13px}
     .footer{margin-top:30px;border-top:1px solid #ccc;padding-top:10px;display:flex;justify-content:space-between;font-size:11px;color:#666}
     .sign-box{text-align:right;margin-top:40px}
     @media print{body{margin:0}}
-  </style></head><body>
+  </style>
+</head>
+<body>
   <div class="header">
     <div>
       <div class="hospital-name">Medi<span>Care</span> HMS</div>
       <div style="font-size:11px;color:#666">Super Speciality Hospital</div>
     </div>
     <div class="doctor-info">
-      <b>Dr. ${o.doctor_name||'Doctor'}</b><br>
-      ${o.speciality||'General Physician'}<br>
-      Date: ${new Date().toLocaleDateString('en-IN')}&nbsp;&nbsp;Time: ${new Date().toLocaleTimeString('en-IN')}
+      <b>Dr. ${o.doctor_name || 'Doctor'}</b><br>
+      ${o.speciality || 'General Physician'}<br>
+      Date: ${new Date().toLocaleDateString('en-IN')} &nbsp; Time: ${new Date().toLocaleTimeString('en-IN')}
     </div>
   </div>
+
   <div class="patient-box">
     <table>
       <tr>
-        <td><b>Patient:</b> ${o.full_name}</td>
-        <td><b>UHID:</b> ${o.uhid}</td>
-        <td><b>Token:</b> ${o.token_no}</td>
+        <td><b>Patient:</b> ${o.full_name || '-'}</td>
+        <td><b>UHID:</b> ${o.uhid || '-'}</td>
+        <td><b>Token:</b> ${o.token_no || '-'}</td>
       </tr>
       <tr>
-        <td><b>Age/Sex:</b> ${o.age||'-'} yrs / ${o.gender||'-'}</td>
-        <td><b>Mobile:</b> ${o.mobile||'-'}</td>
-        <td><b>Blood:</b> ${o.blood_group||'-'}</td>
+        <td><b>Age/Sex:</b> ${o.age || '-'} / ${o.gender || '-'}</td>
+        <td><b>Mobile:</b> ${o.mobile || '-'}</td>
+        <td><b>Blood:</b> ${o.blood_group || '-'}</td>
       </tr>
       <tr>
-        <td><b>BP:</b> ${o.bp_systolic||'-'}/${o.bp_diastolic||'-'} mmHg</td>
-        <td><b>Temp:</b> ${o.temperature||'-'} °F</td>
-        <td><b>SpO2:</b> ${o.spo2||'-'}%&nbsp;&nbsp;<b>Pulse:</b> ${o.pulse_rate||'-'}/min</td>
+        <td colspan="3"><b>Chief Complaint:</b> ${o.chief_complaint || '-'}</td>
       </tr>
-      <tr><td colspan="3"><b>Complaint:</b> ${o.chief_complaint||'-'}</td></tr>
     </table>
   </div>
+
   <div class="section-title">Diagnosis</div>
-  <p style="margin:0 0 10px">${diag||'-'}</p>
-  <div class="section-title"><span class="rx-symbol">℞</span> Medicines Advised</div>
-  <pre>${rx||'-'}</pre>
-  ${notes?`<div class="section-title">Advice / Notes</div><p style="margin:0">${notes}</p>`:''}
+  <pre>${diag}</pre>
+
+  <div class="section-title">Prescription / Medicines</div>
+  <pre>${rx}</pre>
+
+  <div class="section-title">Notes / Advice</div>
+  <pre>${notes || '-'}</pre>
+
   <div class="sign-box">
-    <div style="border-top:1px solid #000;display:inline-block;padding-top:4px;min-width:150px;text-align:center">
-      <b>Dr. ${o.doctor_name||'Doctor'}</b><br>
-      <small>${o.speciality||''}</small>
-    </div>
+    ___________________________<br>
+    Doctor Signature
   </div>
+
   <div class="footer">
-    <span>MediCare HMS — Prescription</span>
-    <span>This is a computer generated prescription</span>
+    <div>Generated by MediCare HMS</div>
+    <div>${new Date().toLocaleString('en-IN')}</div>
   </div>
-  <script>window.onload=()=>{window.print();}<\/script>
-  </body></html>`);
+</body>
+</html>`);
   win.document.close();
+
+  setTimeout(() => {
+    win.focus();
+    win.print();
+  }, 400);
 }
 
 function printOPDSlip(o) {
