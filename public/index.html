@@ -1350,7 +1350,7 @@ async function patProfile() {
 async function recAppointments() {
   const appts = await apiFetch('appointments');
   const today = new Date().toISOString().split('T')[0];
-  const todayAppts = appts.filter(a => a.date === today);
+  const todayAppts = appts;
 
   return `
   <div class="mb-3 d-flex gap-2">
